@@ -1,1 +1,2 @@
 # Synthetic data
+Two datasets exist, smart city and social network. Within each folder are two files, one for the APOC queries used to create the database, run these sequentially to build the dataset. The other file contains the read queries used to gather usage data for each database.

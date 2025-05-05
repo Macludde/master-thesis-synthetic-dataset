@@ -1,0 +1,300 @@
+MATCH (p:PERSON)
+    WHERE p.status = 'active'
+      AND p.friendsCount < 2
+      AND p.lastActive < datetime() - duration({days: 180})
+    RETURN p.firstName, p.lastName, p.email, p.friendsCount, p.lastActive
+    ORDER BY p.lastActive ASC
+    LIMIT 50
+
+MATCH (org:ORGANIZATION)<-[:WORKS_FOR]-(p:PERSON)
+    WHERE p.lastActive > datetime() - duration({days: 30})
+    WITH org, count(p) AS activeEmployees
+    WHERE activeEmployees > 0
+    RETURN org.name, org.revenue, activeEmployees
+    ORDER BY org.revenue DESC
+    LIMIT 10
+
+MATCH (p:PERSON)-[:ATTENDS]->(e:EVENT)
+    WITH e, count(p) AS attendeeCount
+    RETURN e.title, e.date, attendeeCount
+    ORDER BY attendeeCount DESC
+    LIMIT 10
+
+MATCH (p:PERSON {email: 'user123@example.com'})-[:FRIENDS_WITH]->(friend)
+    MATCH (friend)-[:INTERESTED_IN]->(i:INTEREST)
+    RETURN i.name, count(*) AS commonality
+    ORDER BY commonality DESC
+    LIMIT 5
+
+MATCH (e:EVENT {title: 'Event 100'})
+    MATCH (e)-[:LOCATED_IN]->(loc:LOCATION)
+    MATCH (p:PERSON)-[:LOCATED_IN]->(loc)
+    RETURN loc.city, count(p) AS usersInCity
+    ORDER BY usersInCity DESC
+
+MATCH (p:PERSON)-[:LIKES]->(pg:PAGE {name: 'Page 42'})
+    RETURN p.firstName, p.lastName, p.reputation
+    ORDER BY p.reputation DESC
+    LIMIT 20
+
+MATCH (p:PERSON)-[:MEMBER_OF]->(g:GROUP)
+    WITH g, count(p) AS totalMembers
+         sum(CASE WHEN p.lastActive > datetime() - duration({days: 30}) THEN 1 ELSE 0 END) AS activeMembers
+    WHERE totalMembers > 10
+    RETURN g.name, totalMembers, activeMembers, toFloat(activeMembers)/totalMembers AS activityRatio
+    ORDER BY activityRatio DESC
+    LIMIT 10
+
+MATCH (p:PERSON)
+    WHERE p.lastActive > datetime() - duration({years: 1})
+    WITH p, date(p.lastActive) AS activeDate
+    RETURN activeDate.week AS week, count(p) AS activeUserCount
+    ORDER BY week ASC
+
+MATCH (p:PERSON {email:'user123@example.com'})
+    OPTIONAL MATCH (p)-[:WORKS_FOR]->(org:ORGANIZATION)
+    OPTIONAL MATCH (p)-[:ATTENDS]->(e:EVENT)-[:LOCATED_IN]->(loc:LOCATION)
+    RETURN p.firstName, p.lastName, org.name AS organization, e.title AS eventTitle, loc.city AS eventCity
+
+MATCH (p:PERSON {email:'user123@example.com'})-[:INTERESTED_IN]->(i:INTEREST)<-[:INTERESTED_IN]-(other:PERSON)
+    WHERE NOT (p)-[:FRIENDS_WITH]-(other) AND p <> other
+    RETURN other.email, other.firstName, other.lastName, i.name AS commonInterest, count(*) AS sharedInterests
+    ORDER BY sharedInterests DESC
+    LIMIT 10
+CALL {
+        MATCH (p:PERSON)
+        RETURN 'PERSON' AS label, count(p) AS count, avg(p.age) AS avgValue
+        UNION
+        MATCH (org:ORGANIZATION)
+        RETURN 'ORGANIZATION' AS label, count(org) AS count, avg(org.employees) AS avgValue
+        UNION
+        MATCH (e:EVENT)
+        RETURN 'EVENT' AS label, count(e) AS count, avg(e.attendance) AS avgValue
+        UNION
+        MATCH (g:GROUP)
+        RETURN 'GROUP' AS label, count(g) AS count, avg(g.memberCount) AS avgValue
+        UNION
+        MATCH (pg:PAGE)
+        RETURN 'PAGE' AS label, count(pg) AS count, avg(pg.likes) AS avgValue
+    }
+    RETURN label, count, avgValue
+    ORDER BY count DESC
+
+// 1. Get active persons (lastActive within 30 days) with less than 5 friends, sorted by reputation.
+MATCH (p:PERSON)
+    WHERE p.lastActive > datetime() - duration({days:30})
+      AND p.friendsCount < 5
+    RETURN p.firstName, p.lastName, p.email, p.friendsCount, p.reputation
+    ORDER BY p.reputation DESC
+    LIMIT 50
+
+// 2. List events with high attendance (attendance > 100) along with their locations.
+MATCH (e:EVENT)-[:CHECKED_IN]->(l:LOCATION)
+    WHERE e.attendance > 100
+    RETURN e.title, e.date, e.attendance, l.city, l.country
+    ORDER BY e.attendance DESC
+
+// 3. Find organizations founded before 2000 that have employees working for them.
+MATCH (org:ORGANIZATION)<-[:WORKS_FOR]-(p:PERSON)
+    WHERE org.founded < date('2000-01-01')
+    RETURN org.name, org.founded, count(p) AS employeeCount
+    ORDER BY employeeCount DESC
+
+// 4. Retrieve pages with more than 5000 likes in the 'Entertainment' category.
+MATCH (pg:PAGE)
+    WHERE pg.category = 'Entertainment' AND pg.likes > 5000
+    RETURN pg.name, pg.createdAt, pg.likes
+    ORDER BY pg.likes DESC
+
+// 5. List statuses posted in the last 7 days that have been shared more than 10 times.
+MATCH (s:STATUS)
+    WHERE s.postedAt > datetime() - duration({days:7})
+      AND s.shareCount > 10
+    RETURN s.content, s.postedAt, s.shareCount
+    ORDER BY s.postedAt DESC
+
+// 6. For a given influencer, find the top 5 most recent statuses they have posted.
+MATCH (influencer:PERSON:INFLUENCER {email:'star123@social.com'})-[:POSTED]->(s:STATUS)
+    RETURN s.content, s.postedAt, s.likes
+    ORDER BY s.postedAt DESC
+    LIMIT 5
+
+// 7. Find the top 10 comments with negative sentiment (sentiment < 0) flagged for review.
+MATCH (c:COMMENT)
+    WHERE c.sentiment < 0 AND c.flagged = true
+    RETURN c.text, c.commentedAt, c.sentiment
+    ORDER BY c.commentedAt DESC
+    LIMIT 10
+
+// 8. Retrieve persons who are both students and teachers (dual role).
+MATCH (p:PERSON:STUDENT:TEACHER)
+    RETURN p.firstName, p.lastName, p.email, p.enrollmentYear, p.experience
+    LIMIT 20
+
+// 9. Identify groups (including VIP_GROUPs) with more than 200 members that are public.
+MATCH (g:GROUP)
+    WHERE g.memberCount > 200 AND g.isPublic = true
+    RETURN g.name, g.memberCount, g.createdAt
+    ORDER BY g.memberCount DESC
+
+// 10. For a specific event, list persons attending and their interests.
+MATCH (e:EVENT {title:'Event 123'})<-[:ATTENDS]-(p:PERSON)
+    OPTIONAL MATCH (p)-[:INTERESTED_IN]->(i:INTEREST)
+    RETURN p.firstName, p.lastName, collect(DISTINCT i.name) AS interests
+    ORDER BY p.lastName
+    LIMIT 50
+
+// 11. Find messages sent in the last 24 hours between persons, including their sent time.
+MATCH (p1:PERSON)-[m:MESSAGED]->(p2:PERSON)
+    WHERE m.sentAt > datetime() - duration({hours:24})
+    RETURN p1.email AS sender, p2.email AS receiver, m.sentAt
+    ORDER BY m.sentAt DESC
+    LIMIT 50
+
+// 12. Find persons who like a specific page and have also checked in at a location in the same city as that page's headquarters.
+MATCH (p:PERSON)-[:LIKES]->(pg:PAGE {name:'Page 42'})
+    MATCH (p)-[:CHECKED_IN]->(l:LOCATION)
+    WHERE l.city = 'City 10'
+    RETURN p.firstName, p.lastName, pg.name, l.city
+    LIMIT 30
+
+// 13. Aggregate the total number of reactions per status and return statuses with more than 50 reactions.
+MATCH (r:REACTION)-[:REACTED_TO]->(s:STATUS)
+    WITH s, count(r) AS reactionCount
+    WHERE reactionCount > 50
+    RETURN s.content, s.postedAt, reactionCount
+    ORDER BY reactionCount DESC
+    LIMIT 20
+
+// 14. Retrieve statuses that have been tagged with a specific tag, along with the tag's relevance.
+MATCH (s:STATUS)-[t:TAGGED]->(tag:TAG {tag:'Tag99'})
+    RETURN s.content, s.postedAt, t.taggedAt, tag.relevance
+    ORDER BY t.taggedAt DESC
+    LIMIT 20
+
+// 15. Find influencers with over 50,000 followers who are followed by at least 10 regular persons.
+MATCH (influencer:PERSON:INFLUENCER)
+    WHERE influencer.followers > 50000
+    MATCH (p:PERSON)-[:FOLLOWS]->(influencer)
+    WITH influencer, count(p) AS followerCount
+    WHERE followerCount >= 10
+    RETURN influencer.firstName, influencer.lastName, influencer.email, influencer.followers, followerCount
+    ORDER BY influencer.followers DESC
+
+// 16. Retrieve comments on statuses that have been shared in the last month, along with the original status content.
+MATCH (c:COMMENT)-[:COMMENT_ON]->(s:STATUS)
+    WHERE s.postedAt > datetime() - duration({days:30})
+    RETURN s.content AS statusContent, c.text, c.commentedAt, c.flagged
+    ORDER BY c.commentedAt DESC
+    LIMIT 30
+
+// 17. Find organizations in the 'Tech' industry with a marketCap greater than 1000000, and list the names of persons working there.
+MATCH (org:ORGANIZATION {industry:'Tech'})
+    WHERE org.marketCap > 1000000
+    MATCH (p:PERSON)-[:WORKS_FOR]->(org)
+    RETURN org.name, org.marketCap, collect(p.email) AS employees
+    ORDER BY org.marketCap DESC
+    LIMIT 10
+
+// 18. List events and for each, count the number of persons who have both attended and checked in.
+MATCH (e:EVENT)
+    OPTIONAL MATCH (p:PERSON)-[:ATTENDS]->(e)
+    OPTIONAL MATCH (p)-[:CHECKED_IN]->(l:LOCATION) 
+    WHERE l.city = substring(e.location, 6) // assume venue number relates to a city number
+    WITH e, count(DISTINCT p) AS attendanceCount
+    RETURN e.title, e.date, e.attendance, attendanceCount
+    ORDER BY attendanceCount DESC
+    LIMIT 20
+
+// 19. For each tag, compute the average relevance score and list tags with an average relevance above 5.
+MATCH (tag:TAG)
+    WITH tag.tag AS tagName, avg(tag.relevance) AS avgRelevance
+    WHERE avgRelevance > 5
+    RETURN tagName, avgRelevance
+    ORDER BY avgRelevance DESC
+    LIMIT 20
+
+// 20. Retrieve persons with a premiumUser flag who have posted statuses that mention at least one other person.
+MATCH (p:PERSON {premiumUser:true})-[:POSTED]->(s:STATUS)-[:MENTIONS]->(other:PERSON)
+    RETURN p.firstName, p.lastName, p.email, count(DISTINCT other) AS mentionsCount
+    ORDER BY mentionsCount DESC
+    LIMIT 20
+
+// 21. Find the most common subjects among teachers, and count how many teachers teach each subject.
+MATCH (t:PERSON:TEACHER)
+    RETURN t.subject AS subject, count(t) AS teacherCount
+    ORDER BY teacherCount DESC
+    LIMIT 10
+
+// 22. For a given student, list their attended events, groups they are a member of, and any organizations they work for.
+MATCH (p:PERSON:STUDENT {email:'student75000@edu.com'})
+    OPTIONAL MATCH (p)-[:ATTENDS]->(e:EVENT)
+    OPTIONAL MATCH (p)-[:MEMBER_OF]->(g:GROUP)
+    OPTIONAL MATCH (p)-[:WORKS_FOR]->(org:ORGANIZATION)
+    RETURN p.firstName, p.lastName, 
+           collect(DISTINCT e.title) AS attendedEvents, 
+           collect(DISTINCT g.name) AS groups, 
+           collect(DISTINCT org.name) AS organizations
+
+// 23. Retrieve messages between two persons where the content includes a specific keyword.
+MATCH (p1:PERSON)-[m:MESSAGED]->(p2:PERSON)
+    WHERE m.content CONTAINS 'urgent'
+    RETURN p1.email AS sender, p2.email AS receiver, m.sentAt, m.content
+    ORDER BY m.sentAt DESC
+    LIMIT 20
+
+// 24. Identify locations that host both events and have persons checking in more than 100 times.
+MATCH (l:LOCATION)
+    OPTIONAL MATCH (e:EVENT)-[:CHECKED_IN]->(l)
+    OPTIONAL MATCH (p:PERSON)-[ci:CHECKED_IN]->(l)
+    WITH l, count(DISTINCT e) AS eventCount, count(ci) AS checkInCount
+    WHERE eventCount > 0 AND checkInCount > 100
+    RETURN l.city, l.country, eventCount, checkInCount
+    ORDER BY checkInCount DESC
+
+// 25. For statuses posted in the past week, find the distribution of reaction types.
+MATCH (r:REACTION)-[:REACTED_TO]->(s:STATUS)
+    WHERE s.postedAt > datetime() - duration({days:7})
+    WITH r.type AS reactionType, count(r) AS count
+    RETURN reactionType, count
+    ORDER BY count DESC
+
+// 26. List the latest 10 statuses along with the names of persons mentioned in each.
+MATCH (s:STATUS)-[:MENTIONS]->(p:PERSON)
+    RETURN s.content AS status, s.postedAt, collect(p.firstName + ' ' + p.lastName) AS mentionedPersons
+    ORDER BY s.postedAt DESC
+    LIMIT 10
+
+// 27. For each influencer, retrieve the total number of shares across all their statuses.
+MATCH (influencer:PERSON:INFLUENCER)-[:POSTED]->(s:STATUS)
+    WITH influencer.firstName AS firstName, influencer.lastName AS lastName, influencer.email AS email, sum(s.shareCount) AS totalShares
+    RETURN firstName, lastName, email, totalShares
+    ORDER BY totalShares DESC
+
+// 28. Retrieve statuses that have a reaction of type 'LOVE' and at least one comment flagged as true.
+MATCH (s:STATUS)
+    WHERE EXISTS {
+      MATCH (r:REACTION)-[:REACTED_TO]->(s)
+      WHERE r.type = 'LOVE'
+    }
+    AND EXISTS {
+      MATCH (c:COMMENT)-[:COMMENT_ON]->(s)
+      WHERE c.flagged = true
+    }
+    RETURN s.content, s.postedAt
+    ORDER BY s.postedAt DESC
+    LIMIT 15
+
+// 29. Find persons who are highly active: premium users with more than 100 posts and over 1000 visits.
+MATCH (p:PERSON)
+    WHERE p.premiumUser = true 
+      AND p.postsCount > 100 
+      AND p.visits > 1000
+    RETURN p.firstName, p.lastName, p.email, p.postsCount, p.visits
+    ORDER BY p.postsCount DESC
+    LIMIT 20
+
+// 30. Get the average age of persons working for each organization in the 'Finance' industry.
+MATCH (org:ORGANIZATION {industry:'Finance'})<-[:WORKS_FOR]-(p:PERSON)
+    RETURN org.name, avg(p.age) AS avgEmployeeAge, count(p) AS employeeCount
+    ORDER BY avgEmployeeAge

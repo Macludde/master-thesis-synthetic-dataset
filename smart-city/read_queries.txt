@@ -1,0 +1,324 @@
+ "// 1. List residents in a specific district with income above 75000, ordered by income.
+MATCH (p:PERSON:RESIDENT)
+    WHERE p.address CONTAINS 'Street' AND p.income > 75000
+    RETURN p.firstName, p.lastName, p.email, p.income
+    ORDER BY p.income DESC
+    LIMIT 50
+
+// 2. Retrieve senior residents who are pet owners.
+MATCH (p:PERSON:RESIDENT:SENIOR)
+    WHERE p.petOwner = true
+    RETURN p.firstName, p.lastName, p.email, p.pension, p.medicalPlan
+    ORDER BY p.age DESC
+
+// 3. Find varied persons (with VARIED label) that have a favoriteColor property.
+MATCH (p:PERSON:VARIED)
+    WHERE p.favoriteColor IS NOT NULL
+    RETURN p.firstName, p.lastName, p.email, p.favoriteColor, p.luckyNumber
+    LIMIT 30
+
+// 4. Get the top 10 officials from the 'Health' department.
+MATCH (o:PERSON:OFFICIAL:EMPLOYEE)
+    WHERE o.department = 'Health'
+    RETURN o.firstName, o.lastName, o.email, o.position, o.hireDate, o.salary
+    ORDER BY o.salary DESC
+    LIMIT 10
+
+// 5. List cameras with batteryLevel below 20% and installed before 2 years ago.
+MATCH (d:DEVICE:CAMERA)
+    WHERE d.batteryLevel < 20 AND d.installedAt < datetime() - duration({years:2})
+    RETURN d.deviceId, d.model, d.batteryLevel, d.installedAt
+    ORDER BY d.batteryLevel ASC
+
+// 6. Retrieve kiosks that are out-of-service sorted by usageHours descending.
+MATCH (d:DEVICE:KIOSK)
+    WHERE d.status = 'OutOfService'
+    RETURN d.deviceId, d.model, d.usageHours, d.softwareVersion
+    ORDER BY d.usageHours DESC
+    LIMIT 20
+
+// 7. Compute average sensor reading for each sensor type.
+MATCH (s:SENSOR)
+    WITH s.sensorType AS SensorType, avg(s.reading) AS AvgReading, count(s) AS Count
+    RETURN SensorType, AvgReading, Count
+    ORDER BY AvgReading DESC
+
+// 8. List sensors requiring maintenance soon (maintenanceDue within next 7 days).
+MATCH (s:SENSOR)
+    WHERE s.maintenanceDue < datetime() + duration({days:7})
+    RETURN s.sensorId, s.sensorType, s.maintenanceDue
+    ORDER BY s.maintenanceDue ASC
+
+// 9. Count buildings by category (Residential vs. Commercial).
+MATCH (b:BUILDING)
+    WITH b.category AS Category, count(b) AS BuildingCount
+    RETURN Category, BuildingCount
+    ORDER BY BuildingCount DESC
+
+// 10. List smart buildings with automationLevel greater than 7.
+MATCH (b:BUILDING:SMART)
+    WHERE b.automationLevel > 7
+    RETURN b.buildingId, b.name, b.automationLevel, b.sensorsInstalled
+    ORDER BY b.automationLevel DESC
+
+// 11. Find locations in the 'North' region with population over 500,000.
+MATCH (l:LOCATION)
+    WHERE l.region = 'North' AND l.population > 500000
+    RETURN l.locationId, l.city, l.district, l.population, l.area
+    ORDER BY l.population DESC
+
+// 12. List metro locations sorted by area.
+MATCH (l:LOCATION:METRO)
+    RETURN l.locationId, l.city, l.area, l.population, l.attractions
+    ORDER BY l.area DESC
+    LIMIT 30
+
+// 13. List services provided by 'Provider5'.
+MATCH (s:SERVICE)
+    WHERE s.provider = 'Provider5'
+    RETURN s.serviceId, s.name, s.category, s.status, s.responseTime
+    ORDER BY s.name
+
+// 14. Get the average cost of services per category.
+MATCH (s:SERVICE)
+    WITH s.category AS Category, avg(s.cost) AS AvgCost, count(s) AS ServiceCount
+    RETURN Category, AvgCost, ServiceCount
+    ORDER BY AvgCost DESC
+
+// 15. List utilities that use 'Renewable' energy source.
+MATCH (u:UTILITY)
+    WHERE u.energySource = 'Renewable'
+    RETURN u.utilityId, u.name, u.capacity, u.usage, u.outageFrequency
+    ORDER BY u.capacity DESC
+
+// 16. Find incidents with severity above 3 that are still open.
+MATCH (i:INCIDENT)
+    WHERE i.severity > 3 AND i.status = 'Open'
+    RETURN i.incidentId, i.type, i.severity, i.description, i.reportedAt
+    ORDER BY i.severity DESC
+
+// 17. Count incidents per type.
+MATCH (i:INCIDENT)
+    WITH i.type AS IncidentType, count(i) AS Count
+    RETURN IncidentType, Count
+    ORDER BY Count DESC
+
+// 18. List maintenance tasks performed on devices in the last month.
+MATCH (m:MAINTENANCE)
+    WHERE m.performedAt > datetime() - duration({days:30}) AND m.targetType = 'Device'
+    RETURN m.maintenanceId, m.task, m.durationHours, m.technician, m.cost
+    ORDER BY m.performedAt DESC
+
+// 19. List upcoming community events in the next 30 days.
+MATCH (e:EVENT)
+    WHERE e.date >= datetime() AND e.date < datetime() + duration({days:30})
+    RETURN e.eventId, e.title, e.date, e.attendance, e.eventType
+    ORDER BY e.date ASC
+
+// 20. Retrieve community events with attendance greater than 500.
+MATCH (e:EVENT)
+    WHERE e.attendance > 500
+    RETURN e.eventId, e.title, e.date, e.attendance, e.theme
+    ORDER BY e.attendance DESC
+
+// 21. Find companies in the 'Tech' industry with revenue above 5,000,000.
+MATCH (c:COMPANY)
+    WHERE c.industry = 'Tech' AND c.revenue > 5000000
+    RETURN c.companyId, c.name, c.revenue, c.employees, c.rating
+    ORDER BY c.revenue DESC
+
+// 22. List blogs in the 'Lifestyle' category with views over 5000.
+MATCH (b:BLOG)
+    WHERE b.category = 'Lifestyle' AND b.views > 5000
+    RETURN b.blogId, b.title, b.publishedAt, b.views, b.likes
+    ORDER BY b.views DESC
+
+// 23. List authors who have written more than 50 articles.
+MATCH (a:AUTHOR)
+    WHERE a.articles > 50
+    RETURN a.authorId, a.firstName, a.lastName, a.articles, a.rating
+    ORDER BY a.articles DESC
+
+// 24. Retrieve comments that are flagged on any blog posts.
+MATCH (c:COMMENT)
+    WHERE c.flagged = true
+    RETURN c.commentId, c.text, c.postedAt, c.likes, c.sentiment
+    ORDER BY c.postedAt DESC
+    LIMIT 30
+
+// 25. Find reviews for products with a rating less than 3.
+MATCH (r:REVIEW)
+    WHERE r.rating < 3
+    RETURN r.reviewId, r.rating, r.text, r.reviewedAt, r.helpfulVotes
+    ORDER BY r.rating ASC, r.reviewedAt DESC
+    LIMIT 30
+
+// 26. List products in the 'Electronics' category sorted by rating.
+MATCH (p:PRODUCT)
+    WHERE p.category = 'Electronics'
+    RETURN p.productId, p.name, p.rating, p.reviewsCount, p.price
+    ORDER BY p.rating DESC
+    LIMIT 20
+
+// 27. Retrieve orders for a specific customer (by customerId).
+MATCH (o:ORDER)
+    WHERE o.customerId = 'person1234'
+    RETURN o.orderId, o.orderDate, o.totalAmount, o.status, o.shippingMethod
+    ORDER BY o.orderDate DESC
+
+// 28. List orders that were paid using 'Credit Card'.
+MATCH (o:ORDER)-[:PAID_WITH]->(pay:PAYMENT)
+    WHERE pay.method = 'Credit Card'
+    RETURN o.orderId, o.orderDate, pay.paymentId, pay.amount, pay.status
+    ORDER BY o.orderDate DESC
+    LIMIT 30
+
+// 29. Retrieve shipping records with status 'In Transit'.
+MATCH (s:SHIPPING)
+    WHERE s.status = 'In Transit'
+    RETURN s.shippingId, s.carrier, s.trackingNumber, s.shippedAt, s.estimatedDelivery, s.cost
+    ORDER BY s.shippedAt DESC
+    LIMIT 25
+
+// 30. List returns with refundAmount above 50.
+MATCH (r:RETURN)
+    WHERE r.refundAmount > 50
+    RETURN r.returnId, r.orderId, r.refundAmount, r.initiatedAt, r.status
+    ORDER BY r.refundAmount DESC
+    LIMIT 20
+
+// 31. Count FAQs grouped by category.
+MATCH (f:FAQ)
+    WITH f.category AS FAQCategory, count(f) AS FAQCount
+    RETURN FAQCategory, FAQCount
+    ORDER BY FAQCount DESC
+
+// 32. List tags with usageCount higher than 500.
+MATCH (t:TAG)
+    WHERE t.usageCount > 500
+    RETURN t.tagId, t.name, t.usageCount, t.relevance
+    ORDER BY t.usageCount DESC
+    LIMIT 20
+
+// 33. Find persons living in a location with a specific postal code.
+MATCH (p:PERSON)-[:LIVES_IN]->(l:LOCATION)
+    WHERE l.postalCode STARTS WITH '10'
+    RETURN p.personId, p.firstName, p.lastName, l.city, l.postalCode
+    LIMIT 30
+
+// 34. Find persons who work for companies in the 'Construction' industry.
+MATCH (p:PERSON)-[:WORKS_FOR]->(c:COMPANY)
+    WHERE c.industry = 'Construction'
+    RETURN p.personId, p.firstName, p.lastName, c.name, c.industry
+    ORDER BY p.lastName
+    LIMIT 30
+
+// 35. Retrieve devices installed in a building with a specific address.
+MATCH (d:DEVICE)-[:INSTALLED_IN]->(b:BUILDING)
+    WHERE b.address CONTAINS 'Avenue'
+    RETURN d.deviceId, d.type, b.buildingId, b.name, b.address
+    LIMIT 25
+
+// 36. Find sensors connected to a specific device.
+MATCH (s:SENSOR)-[:CONNECTED_TO]->(d:DEVICE)
+    WHERE d.deviceId = 'DEV150'
+    RETURN s.sensorId, s.sensorType, s.reading, d.deviceId, d.type
+    LIMIT 20
+
+// 37. Retrieve buildings owned by a particular company.
+MATCH (c:COMPANY)-[:OWNS]->(b:BUILDING)
+    WHERE c.companyId = 'C10'
+    RETURN b.buildingId, b.name, b.address, c.name AS OwnerCompany
+    LIMIT 20
+
+// 38. List persons who wrote blogs that have more than 100 comments.
+MATCH (p:PERSON)-[:WROTE]->(b:BLOG)
+    WHERE b.commentsCount > 100
+    RETURN p.firstName, p.lastName, p.email, b.blogId, b.title, b.commentsCount
+    ORDER BY b.commentsCount DESC
+    LIMIT 20
+
+// 39. Find incidents that occurred in locations with a specific landmark.
+MATCH (i:INCIDENT)-[:OCCURRED_AT]->(l:LOCATION)
+    WHERE l.landmark CONTAINS 'Landmark'
+    RETURN i.incidentId, i.type, i.severity, l.locationId, l.city, l.landmark
+    LIMIT 20
+
+// 40. Retrieve maintenance tasks for buildings performed in the last year.
+MATCH (m:MAINTENANCE)
+    WHERE m.targetType = 'Building' AND m.performedAt > datetime() - duration({years:1})
+    RETURN m.maintenanceId, m.task, m.durationHours, m.technician, m.performedAt
+    ORDER BY m.performedAt DESC
+
+// 41. List orders that contain products with a specific tag in their tags array.
+MATCH (o:ORDER)-[:CONTAINS]->(p:PRODUCT)
+    WHERE any(t IN p.tags WHERE t CONTAINS 'Tag10')
+    RETURN o.orderId, o.orderDate, collect(p.name) AS Products
+    LIMIT 20
+
+// 42. Retrieve payments with a fee greater than 15.
+MATCH (pay:PAYMENT)
+    WHERE pay.fee > 15
+    RETURN pay.paymentId, pay.amount, pay.fee, pay.method, pay.paidAt
+    ORDER BY pay.fee DESC
+    LIMIT 20
+
+// 43. List shipping records with estimated delivery within the next 3 days.
+MATCH (s:SHIPPING)
+    WHERE s.estimatedDelivery < datetime() + duration({days:3})
+    RETURN s.shippingId, s.carrier, s.trackingNumber, s.estimatedDelivery
+    ORDER BY s.estimatedDelivery ASC
+    LIMIT 25
+
+// 44. Retrieve FAQs that have been updated in the last 90 days.
+MATCH (f:FAQ)
+    WHERE f.updatedAt > datetime() - duration({days:90})
+    RETURN f.faqId, f.question, f.updatedAt, f.category
+    ORDER BY f.updatedAt DESC
+    LIMIT 30
+
+// 45. Complex query: For a given location (by postal code prefix), list all residents
+    // then for each resident, find buildings near that location (matching city) and count incidents affecting those buildings.
+MATCH (l:LOCATION)
+    WHERE l.postalCode STARTS WITH '10'
+MATCH (p:PERSON)-[:LIVES_IN]->(l)
+    OPTIONAL MATCH (b:BUILDING)
+    WHERE b.address CONTAINS l.city
+    OPTIONAL MATCH (i:INCIDENT)-[:AFFECTS]->(b)
+    WITH l.locationId AS LocID, l.city AS City, p.personId AS PersonID, p.firstName AS First, p.lastName AS Last, b.buildingId AS BldgID, b.name AS BldgName, count(i) AS IncidentCount
+    RETURN LocID, City, PersonID, First, Last, BldgID, BldgName, IncidentCount
+    ORDER BY City, IncidentCount DESC
+    LIMIT 50
+
+// 46. List all devices (cameras and kiosks) that have an IP address starting with '10.0.'
+MATCH (d:DEVICE)
+    WHERE d.ipAddress STARTS WITH '10.0.'
+    RETURN d.deviceId, d.type, d.ipAddress, d.manufacturer
+    ORDER BY d.deviceId
+    LIMIT 30
+
+// 47. For each sensor type, show the maximum, minimum, and average reading recorded.
+MATCH (s:SENSOR)
+    WITH s.sensorType AS SensorType, max(s.reading) AS MaxReading, min(s.reading) AS MinReading, avg(s.reading) AS AvgReading
+    RETURN SensorType, MaxReading, MinReading, AvgReading
+
+// 48. Find companies with a slogan containing 'Slogan' and a rating above 4.
+MATCH (c:COMPANY)
+    WHERE c.slogan CONTAINS 'Slogan' AND c.rating > 4
+    RETURN c.companyId, c.name, c.slogan, c.rating
+    ORDER BY c.rating DESC
+
+// 49. Retrieve blogs that have multimedia content (images or videos) and at least 2 tags.
+MATCH (b:BLOG)
+    WHERE (size(b.multimedia.images) > 0 OR size(b.multimedia.videos) > 0)
+      AND size(b.tags) >= 2
+    RETURN b.blogId, b.title, b.publishedAt, b.tags, b.multimedia
+    ORDER BY b.publishedAt DESC
+    LIMIT 20
+
+// 50. Find orders where the total discount applied is more than 20 and payment status is 'Paid'.
+MATCH (o:ORDER)-[:PAID_WITH]->(pay:PAYMENT)
+    WHERE o.discountApplied > 20 AND o.paymentStatus = 'Paid'
+    RETURN o.orderId, o.orderDate, o.totalAmount, o.discountApplied, pay.method, pay.status
+    ORDER BY o.orderDate DESC
+    LIMIT 20

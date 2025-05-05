@@ -1,0 +1,1481 @@
+// =====================================================================
+// SMART CITY DATASET
+// This dataset is designed for a Smart City use case with a high variety
+// of node labels and properties. Each node type has between 5 to 25 properties,
+// and there are over 20 different labels and 40-60 distinct property keys.
+// Relationships are created to link nodes where appropriate.
+// =====================================================================
+
+// -----------------------------------------------------
+// Create PERSON nodes (residents, officials, etc.)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,5000) AS id RETURN id",
+  "
+  WITH id,
+       {
+         personId: id,
+         firstName: 'First' + id,
+         lastName: 'Last' + id,
+         email: 'person' + id + '@smartcity.com',
+         age: toInteger(rand()*60+18),
+         occupation: CASE WHEN rand() < 0.5 THEN 'Engineer' ELSE 'Teacher' END,
+         residentSince: date() - duration({years: toInteger(rand()*30)}),
+         address: 'Street ' + id,
+         income: round(rand()*100000,2),
+         vehicleOwned: rand() < 0.4,
+         petOwner: rand() < 0.3,
+         nationality: CASE WHEN rand() < 0.7 THEN 'CountryA' ELSE 'CountryB' END,
+         maritalStatus: CASE WHEN rand() < 0.5 THEN 'Single' ELSE 'Married' END,
+         education: CASE WHEN rand() < 0.5 THEN 'Bachelor' ELSE 'Master' END,
+         hobbies: 'Hobby' + toString(toInteger(rand()*10)),
+         language: CASE WHEN rand() < 0.5 THEN 'English' ELSE 'Local' END,
+         registeredAt: datetime() - duration({days: toInteger(rand()*1000)}),
+         creditScore: toInteger(rand()*850)
+       } AS props
+  CALL apoc.create.node(['PERSON'], props) YIELD node
+  RETURN count(node) AS createdPersons
+  ", {batchSize:1000, parallel:true});
+
+// -----------------------------------------------------
+// Create DEVICE nodes (city devices: cameras, kiosks, etc.)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,2000) AS id RETURN id",
+  "
+  WITH id,
+       {
+         deviceId: 'DEV' + id,
+         type: CASE WHEN rand() < 0.5 THEN 'Camera' ELSE 'Kiosk' END,
+         manufacturer: 'Manufacturer' + toString(toInteger(rand()*10)),
+         model: 'Model' + toString(toInteger(rand()*100)),
+         installedAt: datetime() - duration({days: toInteger(rand()*2000)}),
+         status: CASE WHEN rand() < 0.8 THEN 'Active' ELSE 'Inactive' END,
+         batteryLevel: toInteger(rand()*100),
+         firmware: 'FW' + toString(toInteger(rand()*10)),
+         locationDescription: 'Intersection ' + id,
+         usageHours: toInteger(rand()*5000),
+         ipAddress: '192.168.' + toString(toInteger(rand()*255)) + '.' + toString(toInteger(rand()*255))
+       } AS props
+  CALL apoc.create.node(['DEVICE'], props) YIELD node
+  RETURN count(node) AS createdDevices
+  ", {batchSize:500, parallel:true});
+
+// -----------------------------------------------------
+// Create SENSOR nodes (environment, traffic, etc.)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,3000) AS id RETURN id",
+  "
+  WITH id,
+       {
+         sensorId: 'SEN' + id,
+         type: CASE WHEN rand() < 0.33 THEN 'Temperature' WHEN rand() < 0.66 THEN 'AirQuality' ELSE 'Noise' END,
+         reading: round(rand()*100,2),
+         unit: CASE WHEN rand() < 0.5 THEN 'Celsius' ELSE 'dB' END,
+         lastCalibration: datetime() - duration({days: toInteger(rand()*365)}),
+         accuracy: round(rand()*10,2),
+         manufacturer: 'SensorCo' + toString(toInteger(rand()*5)),
+         model: 'SModel' + toString(toInteger(rand()*50)),
+         installedAt: datetime() - duration({days: toInteger(rand()*1500)}),
+         locationInfo: 'Sector ' + toString(toInteger(rand()*100)),
+         maintenanceDue: datetime() + duration({days: toInteger(rand()*180)}),
+         batteryStatus: CASE WHEN rand() < 0.7 THEN 'Good' ELSE 'Replace Soon' END
+       } AS props
+  CALL apoc.create.node(['SENSOR'], props) YIELD node
+  RETURN count(node) AS createdSensors
+  ", {batchSize:500, parallel:true});
+
+// -----------------------------------------------------
+// Create BUILDING nodes (residential, commercial, etc.)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,1000) AS id RETURN id",
+  "
+  WITH id,
+       {
+         buildingId: 'B' + id,
+         name: 'Building ' + id,
+         address: 'Avenue ' + id,
+         floors: toInteger(rand()*20+1),
+         yearBuilt: 1900 + toInteger(rand()*120),
+         owner: 'Owner ' + id,
+         occupancyRate: round(rand(),2),
+         energyConsumption: round(rand()*10000,2),
+         category: CASE WHEN rand() < 0.5 THEN 'Residential' ELSE 'Commercial' END,
+         parkingSpaces: toInteger(rand()*50),
+         architect: 'Architect' + toString(toInteger(rand()*20))
+       } AS props
+  CALL apoc.create.node(['BUILDING'], props) YIELD node
+  RETURN count(node) AS createdBuildings
+  ", {batchSize:250, parallel:true});
+
+// -----------------------------------------------------
+// Create LOCATION nodes (geographic areas)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,500) AS id RETURN id",
+  "
+  WITH id,
+       {
+         locationId: 'L' + id,
+         city: 'City' + toString(toInteger(rand()*20)),
+         district: 'District' + toString(toInteger(rand()*50)),
+         latitude: round(rand()*180-90,6),
+         longitude: round(rand()*360-180,6),
+         postalCode: toString(10000 + toInteger(rand()*90000)),
+         region: CASE WHEN rand() < 0.5 THEN 'North' ELSE 'South' END,
+         area: round(rand()*300,2),
+         population: toInteger(rand()*1000000),
+         landmark: CASE WHEN rand() < 0.3 THEN 'Landmark' + id ELSE null END,
+         timezone: 'GMT' + (toInteger(rand()*5)-2)
+       } AS props
+  CALL apoc.create.node(['LOCATION'], props) YIELD node
+  RETURN count(node) AS createdLocations
+  ", {batchSize:100, parallel:true});
+
+// -----------------------------------------------------
+// Create SERVICE nodes (public services: transit, waste, etc.)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,800) AS id RETURN id",
+  "
+  WITH id,
+       {
+         serviceId: 'SV' + id,
+         name: 'Service ' + id,
+         description: 'Service description ' + id,
+         provider: 'Provider' + toString(toInteger(rand()*10)),
+         status: CASE WHEN rand() < 0.9 THEN 'Operational' ELSE 'Down' END,
+         serviceLevel: toInteger(rand()*5+1),
+         cost: round(rand()*500,2),
+         contractStart: date() - duration({years: toInteger(rand()*5)}),
+         contractEnd: date() + duration({years: toInteger(rand()*5)}),
+         rating: round(rand()*5,2),
+         category: CASE WHEN rand() < 0.5 THEN 'Transit' ELSE 'Utilities' END,
+         responseTime: round(rand()*60,2)
+       } AS props
+  CALL apoc.create.node(['SERVICE'], props) YIELD node
+  RETURN count(node) AS createdServices
+  ", {batchSize:200, parallel:true});
+
+// -----------------------------------------------------
+// Create INCIDENT nodes (city events, emergencies, etc.)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,1500) AS id RETURN id",
+  "
+  WITH id,
+       {
+         incidentId: 'INC' + id,
+         type: CASE WHEN rand() < 0.5 THEN 'Traffic' ELSE 'Safety' END,
+         description: 'Incident description ' + id,
+         reportedAt: datetime() - duration({hours: toInteger(rand()*5000)}),
+         severity: toInteger(rand()*5+1),
+         resolvedAt: CASE WHEN rand() < 0.6 THEN datetime() - duration({hours: toInteger(rand()*1000)}) ELSE null END,
+         location: 'Location ' + toString(toInteger(rand()*500)),
+         reporter: 'Reporter' + id,
+         status: CASE WHEN rand() < 0.7 THEN 'Resolved' ELSE 'Open' END,
+         impact: round(rand()*10,2)
+       } AS props
+  CALL apoc.create.node(['INCIDENT'], props) YIELD node
+  RETURN count(node) AS createdIncidents
+  ", {batchSize:200, parallel:true});
+
+// -----------------------------------------------------
+// Create MAINTENANCE nodes (tasks for devices, sensors, buildings)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,1000) AS id RETURN id",
+  "
+  WITH id,
+       {
+         maintenanceId: 'MT' + id,
+         task: 'Maintenance task ' + id,
+         performedAt: datetime() - duration({days: toInteger(rand()*365)}),
+         duration: toInteger(rand()*8+1),
+         technician: 'Tech' + toString(toInteger(rand()*100)),
+         cost: round(rand()*1000,2),
+         remarks: 'Remarks for maintenance ' + id,
+         targetType: CASE WHEN rand() < 0.33 THEN 'Building' WHEN rand() < 0.66 THEN 'Device' ELSE 'Sensor' END,
+         targetId: 'ID' + id,
+         partsReplaced: toInteger(rand()*5),
+         downtime: toInteger(rand()*3)
+       } AS props
+  CALL apoc.create.node(['MAINTENANCE'], props) YIELD node
+  RETURN count(node) AS createdMaintenanceTasks
+  ", {batchSize:200, parallel:true});
+
+// -----------------------------------------------------
+// Create UTILITY nodes (energy, water, etc.)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,600) AS id RETURN id",
+  "
+  WITH id,
+       {
+         utilityId: 'UT' + id,
+         name: 'Utility ' + id,
+         type: CASE WHEN rand() < 0.5 THEN 'Electricity' ELSE 'Water' END,
+         capacity: round(rand()*10000,2),
+         usage: round(rand()*capacity,2),
+         provider: 'UtilityProvider' + toString(toInteger(rand()*5)),
+         contractNumber: 'CN' + id,
+         installedAt: datetime() - duration({years: toInteger(rand()*10)}),
+         status: CASE WHEN rand() < 0.85 THEN 'Active' ELSE 'Inactive' END,
+         energySource: CASE WHEN rand() < 0.5 THEN 'Renewable' ELSE 'Non-Renewable' END,
+         outageFrequency: toInteger(rand()*10)
+       } AS props
+  CALL apoc.create.node(['UTILITY'], props) YIELD node
+  RETURN count(node) AS createdUtilities
+  ", {batchSize:100, parallel:true});
+
+// -----------------------------------------------------
+// Create EVENT nodes (community events, festivals, etc.)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,800) AS id RETURN id",
+  "
+  WITH id,
+       {
+         eventId: 'EV' + id,
+         title: 'Community Event ' + id,
+         description: 'Event description ' + id,
+         date: datetime() + duration({days: toInteger(rand()*365)}),
+         organizer: 'Organizer' + id,
+         location: 'Location ' + toString(toInteger(rand()*500)),
+         attendance: toInteger(rand()*1000),
+         eventType: CASE WHEN rand() < 0.5 THEN 'Festival' ELSE 'Meeting' END,
+         duration: toInteger(rand()*8+1),
+         cost: round(rand()*200,2),
+         sponsors: 'Sponsor' + toString(toInteger(rand()*10)),
+         theme: 'Theme' + toString(toInteger(rand()*5))
+       } AS props
+  CALL apoc.create.node(['EVENT'], props) YIELD node
+  RETURN count(node) AS createdEvents
+  ", {batchSize:100, parallel:true});
+
+// -----------------------------------------------------
+// Create COMPANY nodes (service providers, construction, etc.)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,400) AS id RETURN id",
+  "
+  WITH id,
+       {
+         companyId: 'C' + id,
+         name: 'Company ' + id,
+         industry: CASE WHEN rand() < 0.5 THEN 'Construction' ELSE 'Tech' END,
+         founded: date() - duration({years: toInteger(rand()*50)}),
+         CEO: 'CEO ' + id,
+         revenue: round(rand()*10000000,2),
+         employees: toInteger(rand()*5000),
+         headquarters: 'Headquarters ' + id,
+         rating: round(rand()*5,2),
+         slogan: 'Slogan ' + id,
+         marketShare: round(rand()*100,2)
+       } AS props
+  CALL apoc.create.node(['COMPANY'], props) YIELD node
+  RETURN count(node) AS createdCompanies
+  ", {batchSize:100, parallel:true});
+
+// -----------------------------------------------------
+// Create BLOG nodes (city blog posts, news, etc.)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,1000) AS id RETURN id",
+  "
+  WITH id,
+       {
+         blogId: 'BL' + id,
+         title: 'Blog Post ' + id,
+         content: 'Content for blog post ' + id,
+         publishedAt: datetime() - duration({days: toInteger(rand()*500)}),
+         author: 'Author' + toString(toInteger(rand()*200)),
+         category: CASE WHEN rand() < 0.5 THEN 'News' ELSE 'Lifestyle' END,
+         views: toInteger(rand()*10000),
+         likes: toInteger(rand()*1000),
+         tags: 'Tag' + toString(toInteger(rand()*20)),
+         commentsCount: toInteger(rand()*200)
+       } AS props
+  CALL apoc.create.node(['BLOG'], props) YIELD node
+  RETURN count(node) AS createdBlogs
+  ", {batchSize:100, parallel:true});
+
+// -----------------------------------------------------
+// Create AUTHOR nodes (for blogs, publications, etc.)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,300) AS id RETURN id",
+  "
+  WITH id,
+       {
+         authorId: 'A' + id,
+         firstName: 'AuthorFirst' + id,
+         lastName: 'AuthorLast' + id,
+         email: 'author' + id + '@smartcity.com',
+         bio: 'Bio of author ' + id,
+         joinedAt: datetime() - duration({days: toInteger(rand()*1000)}),
+         articles: toInteger(rand()*100),
+         rating: round(rand()*5,2),
+         website: 'http://author' + id + '.com',
+         socialHandles: 'Handle' + id,
+         specialties: 'Specialty' + toString(toInteger(rand()*10))
+       } AS props
+  CALL apoc.create.node(['AUTHOR'], props) YIELD node
+  RETURN count(node) AS createdAuthors
+  ", {batchSize:50, parallel:true});
+
+// -----------------------------------------------------
+// Create COMMENT nodes (on blogs, events, etc.)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,1500) AS id RETURN id",
+  "
+  WITH id,
+       {
+         commentId: 'CM' + id,
+         text: 'Comment text ' + id,
+         postedAt: datetime() - duration({minutes: toInteger(rand()*10000)}),
+         author: 'Commenter' + id,
+         likes: toInteger(rand()*200),
+         flagged: rand() < 0.1,
+         sentiment: toInteger(rand()*3)-1,
+         replyTo: CASE WHEN rand() < 0.3 THEN 'CM' + toString(toInteger(rand()*1500)+1) ELSE null END
+       } AS props
+  CALL apoc.create.node(['COMMENT'], props) YIELD node
+  RETURN count(node) AS createdComments
+  ", {batchSize:100, parallel:true});
+
+// -----------------------------------------------------
+// Create REVIEW nodes (product reviews, service reviews, etc.)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,1000) AS id RETURN id",
+  "
+  WITH id,
+       {
+         reviewId: 'RV' + id,
+         rating: toInteger(rand()*5+1),
+         text: 'Review text ' + id,
+         reviewedAt: datetime() - duration({days: toInteger(rand()*365)}),
+         reviewer: 'Reviewer' + id,
+         productId: 'P' + toString(toInteger(rand()*1000)+1),
+         pros: 'Pros ' + id,
+         cons: 'Cons ' + id,
+         verified: rand() < 0.7,
+         helpfulVotes: toInteger(rand()*100)
+       } AS props
+  CALL apoc.create.node(['REVIEW'], props) YIELD node
+  RETURN count(node) AS createdReviews
+  ", {batchSize:100, parallel:true});
+
+// -----------------------------------------------------
+// Create PRODUCT nodes (city products, services, etc.)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,1200) AS id RETURN id",
+  "
+  WITH id,
+       {
+         productId: 'P' + id,
+         name: 'Product ' + id,
+         description: 'Description for product ' + id,
+         price: round(rand()*1000,2),
+         category: CASE WHEN rand() < 0.5 THEN 'Electronics' ELSE 'Home' END,
+         brand: 'Brand' + toString(toInteger(rand()*20)),
+         releaseDate: date() - duration({days: toInteger(rand()*1000)}),
+         warranty: toInteger(rand()*36+6),
+         rating: round(rand()*5,2),
+         reviewsCount: toInteger(rand()*200),
+         stock: toInteger(rand()*1000),
+         sku: 'SKU' + id,
+         color: CASE WHEN rand() < 0.5 THEN 'Red' ELSE 'Blue' END,
+         weight: round(rand()*5,2),
+         dimensions: 'Dim' + id,
+         material: 'Material' + toString(toInteger(rand()*5))
+       } AS props
+  CALL apoc.create.node(['PRODUCT'], props) YIELD node
+  RETURN count(node) AS createdProducts
+  ", {batchSize:100, parallel:true});
+
+// -----------------------------------------------------
+// Create ORDER nodes (e-commerce orders)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,800) AS id RETURN id",
+  "
+  WITH id,
+       {
+         orderId: 'O' + id,
+         orderDate: datetime() - duration({days: toInteger(rand()*365)}),
+         status: CASE WHEN rand() < 0.8 THEN 'Completed' ELSE 'Pending' END,
+         totalAmount: round(rand()*500,2),
+         customerId: 'person' + toString(toInteger(rand()*5000)+1),
+         shippingMethod: CASE WHEN rand() < 0.5 THEN 'Standard' ELSE 'Express' END,
+         trackingNumber: 'TRK' + id,
+         discountApplied: round(rand()*50,2),
+         tax: round(rand()*20,2),
+         paymentStatus: CASE WHEN rand() < 0.9 THEN 'Paid' ELSE 'Unpaid' END
+       } AS props
+  CALL apoc.create.node(['ORDER'], props) YIELD node
+  RETURN count(node) AS createdOrders
+  ", {batchSize:100, parallel:true});
+
+// -----------------------------------------------------
+// Create COUPON nodes (discount codes)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,300) AS id RETURN id",
+  "
+  WITH id,
+       {
+         couponId: 'CP' + id,
+         code: 'DISCOUNT' + id,
+         discount: round(rand()*100,2),
+         expiresAt: datetime() + duration({days: toInteger(rand()*90)}),
+         usageCount: toInteger(rand()*100),
+         maxUsage: toInteger(rand()*200+50),
+         description: 'Coupon ' + id + ' description',
+         applicableCategories: CASE WHEN rand() < 0.5 THEN 'Electronics,Home' ELSE 'Fashion,Beauty' END,
+         minimumPurchase: round(rand()*200,2)
+       } AS props
+  CALL apoc.create.node(['COUPON'], props) YIELD node
+  RETURN count(node) AS createdCoupons
+  ", {batchSize:50, parallel:true});
+
+// -----------------------------------------------------
+// Create PAYMENT nodes (transactions)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,600) AS id RETURN id",
+  "
+  WITH id,
+       {
+         paymentId: 'PAY' + id,
+         amount: round(rand()*1000,2),
+         method: CASE WHEN rand() < 0.5 THEN 'Credit Card' ELSE 'PayPal' END,
+         paidAt: datetime() - duration({hours: toInteger(rand()*500)}),
+         status: CASE WHEN rand() < 0.9 THEN 'Success' ELSE 'Failed' END,
+         transactionId: 'TX' + id,
+         currency: 'USD',
+         gateway: 'Gateway' + toString(toInteger(rand()*5)),
+         fee: round(rand()*20,2),
+         refund: CASE WHEN rand() < 0.1 THEN round(rand()*100,2) ELSE 0 END
+       } AS props
+  CALL apoc.create.node(['PAYMENT'], props) YIELD node
+  RETURN count(node) AS createdPayments
+  ", {batchSize:50, parallel:true});
+
+// -----------------------------------------------------
+// Create SHIPPING nodes (delivery info)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,500) AS id RETURN id",
+  "
+  WITH id,
+       {
+         shippingId: 'SHIP' + id,
+         carrier: 'Carrier' + toString(toInteger(rand()*10)),
+         trackingNumber: 'TRACK' + id,
+         shippedAt: datetime() - duration({days: toInteger(rand()*30)}),
+         estimatedDelivery: datetime() + duration({days: toInteger(rand()*10)}),
+         status: CASE WHEN rand() < 0.8 THEN 'In Transit' ELSE 'Delivered' END,
+         cost: round(rand()*50,2),
+         weight: round(rand()*10,2),
+         dimensions: 'Dim' + id
+       } AS props
+  CALL apoc.create.node(['SHIPPING'], props) YIELD node
+  RETURN count(node) AS createdShippingRecords
+  ", {batchSize:50, parallel:true});
+
+// -----------------------------------------------------
+// Create RETURN nodes (order returns)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,200) AS id RETURN id",
+  "
+  WITH id,
+       {
+         returnId: 'RET' + id,
+         orderId: 'O' + toString(toInteger(rand()*800)+1),
+         reason: CASE WHEN rand() < 0.5 THEN 'Defective' ELSE 'Not as described' END,
+         initiatedAt: datetime() - duration({days: toInteger(rand()*30)}),
+         resolvedAt: CASE WHEN rand() < 0.7 THEN datetime() - duration({days: toInteger(rand()*10)}) ELSE null END,
+         status: CASE WHEN rand() < 0.8 THEN 'Processed' ELSE 'Pending' END,
+         refundAmount: round(rand()*100,2),
+         itemsCount: toInteger(rand()*5+1)
+       } AS props
+  CALL apoc.create.node(['RETURN'], props) YIELD node
+  RETURN count(node) AS createdReturns
+  ", {batchSize:50, parallel:true});
+
+// -----------------------------------------------------
+// Create FAQ nodes (help/support content)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,300) AS id RETURN id",
+  "
+  WITH id,
+       {
+         faqId: 'FAQ' + id,
+         question: 'What is question ' + id + '?',
+         answer: 'Answer for question ' + id,
+         category: CASE WHEN rand() < 0.5 THEN 'General' ELSE 'Technical' END,
+         views: toInteger(rand()*10000),
+         likes: toInteger(rand()*500),
+         updatedAt: datetime() - duration({days: toInteger(rand()*365)})
+       } AS props
+  CALL apoc.create.node(['FAQ'], props) YIELD node
+  RETURN count(node) AS createdFAQs
+  ", {batchSize:50, parallel:true});
+
+// -----------------------------------------------------
+// Create TAG nodes (for content categorization)
+// -----------------------------------------------------
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,500) AS id RETURN id",
+  "
+  WITH id,
+       {
+         tagId: 'T' + id,
+         name: 'Tag' + id,
+         relevance: round(rand()*10,2),
+         description: 'Description for tag ' + id,
+         createdAt: datetime() - duration({days: toInteger(rand()*1000)}),
+         usageCount: toInteger(rand()*1000)
+       } AS props
+  CALL apoc.create.node(['TAG'], props) YIELD node
+  RETURN count(node) AS createdTags
+  ", {batchSize:50, parallel:true});
+
+// =====================================================================
+// RELATIONSHIP CREATION (a selection of relationships to interlink nodes)
+// =====================================================================
+
+// PERSON lives in a LOCATION
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (l:LOCATION) WHERE rand() < 0.05 RETURN p, l",
+  "CREATE (p)-[:LIVES_IN]->(l)",
+  {batchSize:100, parallel:true});
+
+// DEVICE is located at a BUILDING
+CALL apoc.periodic.iterate(
+  "MATCH (d:DEVICE), (b:BUILDING) WHERE rand() < 0.03 RETURN d, b",
+  "CREATE (d)-[:INSTALLED_IN]->(b)",
+  {batchSize:50, parallel:true});
+
+// SENSOR is deployed in a BUILDING and linked to a DEVICE
+CALL apoc.periodic.iterate(
+  "MATCH (s:SENSOR), (b:BUILDING) WHERE rand() < 0.04 RETURN s, b",
+  "CREATE (s)-[:DEPLOYED_IN]->(b)",
+  {batchSize:50, parallel:true});
+CALL apoc.periodic.iterate(
+  "MATCH (s:SENSOR), (d:DEVICE) WHERE rand() < 0.03 RETURN s, d",
+  "CREATE (s)-[:CONNECTED_TO]->(d)",
+  {batchSize:50, parallel:true});
+
+// BUILDING is managed by a COMPANY
+CALL apoc.periodic.iterate(
+  "MATCH (b:BUILDING), (c:COMPANY) WHERE rand() < 0.05 RETURN b, c",
+  "CREATE (c)-[:OWNS]->(b)",
+  {batchSize:50, parallel:true});
+
+// PERSON uses SERVICE
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (s:SERVICE) WHERE rand() < 0.03 RETURN p, s",
+  "CREATE (p)-[:USES_SERVICE {since: datetime() - duration({days: toInteger(rand()*1000)})}]->(s)",
+  {batchSize:50, parallel:true});
+
+// INCIDENT occurred at a LOCATION and affects a BUILDING
+CALL apoc.periodic.iterate(
+  "MATCH (i:INCIDENT), (l:LOCATION) WHERE rand() < 0.05 RETURN i, l",
+  "CREATE (i)-[:OCCURRED_AT]->(l)",
+  {batchSize:50, parallel:true});
+CALL apoc.periodic.iterate(
+  "MATCH (i:INCIDENT), (b:BUILDING) WHERE rand() < 0.03 RETURN i, b",
+  "CREATE (i)-[:AFFECTS]->(b)",
+  {batchSize:50, parallel:true});
+
+// MAINTENANCE performed on a DEVICE, SENSOR, or BUILDING
+CALL apoc.periodic.iterate(
+  "MATCH (m:MAINTENANCE), (d:DEVICE) WHERE m.targetType = 'Device' AND rand() < 0.1 RETURN m, d",
+  "CREATE (m)-[:PERFORMED_ON]->(d)",
+  {batchSize:50, parallel:true});
+CALL apoc.periodic.iterate(
+  "MATCH (m:MAINTENANCE), (s:SENSOR) WHERE m.targetType = 'Sensor' AND rand() < 0.1 RETURN m, s",
+  "CREATE (m)-[:PERFORMED_ON]->(s)",
+  {batchSize:50, parallel:true});
+CALL apoc.periodic.iterate(
+  "MATCH (m:MAINTENANCE), (b:BUILDING) WHERE m.targetType = 'Building' AND rand() < 0.1 RETURN m, b",
+  "CREATE (m)-[:PERFORMED_ON]->(b)",
+  {batchSize:50, parallel:true});
+
+// PERSON writes a BLOG
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (b:BLOG) WHERE rand() < 0.02 RETURN p, b",
+  "CREATE (p)-[:WROTE]->(b)",
+  {batchSize:50, parallel:true});
+
+// AUTHOR writes a BLOG
+CALL apoc.periodic.iterate(
+  "MATCH (a:AUTHOR), (b:BLOG) WHERE rand() < 0.05 RETURN a, b",
+  "CREATE (a)-[:AUTHORED]->(b)",
+  {batchSize:50, parallel:true});
+
+// BLOG has COMMENTs
+CALL apoc.periodic.iterate(
+  "MATCH (b:BLOG), (c:COMMENT) WHERE rand() < 0.03 RETURN b, c",
+  "CREATE (c)-[:COMMENT_ON]->(b)",
+  {batchSize:50, parallel:true});
+
+// PRODUCT is reviewed by REVIEW
+CALL apoc.periodic.iterate(
+  "MATCH (p:PRODUCT), (r:REVIEW) WHERE r.productId = p.productId AND rand() < 0.05 RETURN p, r",
+  "CREATE (r)-[:REVIEWS]->(p)",
+  {batchSize:50, parallel:true});
+
+// ORDER contains PRODUCT
+CALL apoc.periodic.iterate(
+  "MATCH (o:ORDER), (p:PRODUCT) WHERE rand() < 0.05 RETURN o, p",
+  "CREATE (o)-[:CONTAINS]->(p)",
+  {batchSize:50, parallel:true});
+
+// ORDER is paid by PAYMENT
+CALL apoc.periodic.iterate(
+  "MATCH (o:ORDER), (pay:PAYMENT) WHERE rand() < 0.03 RETURN o, pay",
+  "CREATE (o)-[:PAID_WITH]->(pay)",
+  {batchSize:50, parallel:true});
+
+// ORDER is shipped via SHIPPING
+CALL apoc.periodic.iterate(
+  "MATCH (o:ORDER), (ship:SHIPPING) WHERE rand() < 0.03 RETURN o, ship",
+  "CREATE (o)-[:SHIPPED_VIA]->(ship)",
+  {batchSize:50, parallel:true});
+
+// ORDER may result in a RETURN
+CALL apoc.periodic.iterate(
+  "MATCH (o:ORDER), (r:RETURN) WHERE r.orderId = o.orderId AND rand() < 0.02 RETURN o, r",
+  "CREATE (o)-[:HAS_RETURN]->(r)",
+  {batchSize:50, parallel:true});
+
+// FAQ is tagged with TAG
+CALL apoc.periodic.iterate(
+  "MATCH (f:FAQ), (t:TAG) WHERE rand() < 0.05 RETURN f, t",
+  "CREATE (f)-[:TAGGED_WITH]->(t)",
+  {batchSize:50, parallel:true});
+
+// =======================
+// 1. PERSON / RESIDENT VARIATIONS
+// =======================
+
+// 1.1 Standard PERSON nodes with basic properties
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,5000) AS id RETURN id",
+  "
+  WITH id,
+       {
+         personId: 'P' + id,
+         firstName: 'ResidentFirst' + id,
+         lastName: 'ResidentLast' + id,
+         email: 'resident' + id + '@citymail.com',
+         age: toInteger(rand()*60+18),
+         occupation: CASE WHEN rand() < 0.5 THEN 'Engineer' ELSE 'Teacher' END,
+         residentSince: date() - duration({years: toInteger(rand()*30)}),
+         address: 'Street ' + id,
+         income: round(rand()*100000,2),
+         petOwner: rand() < 0.3,
+         maritalStatus: CASE WHEN rand() < 0.5 THEN 'Single' ELSE 'Married' END,
+         education: CASE WHEN rand() < 0.5 THEN 'Bachelor' ELSE 'Master' END,
+         hobbies: [ 'Hobby' + toString(toInteger(rand()*10)), 'Hobby' + toString(toInteger(rand()*10)) ],
+         language: CASE WHEN rand() < 0.5 THEN 'English' ELSE 'Local' END,
+         registeredAt: datetime() - duration({days: toInteger(rand()*1000)}),
+         creditScore: toInteger(rand()*850),
+         geo: { lat: round(rand()*180-90,6), lon: round(rand()*360-180,6) }
+       } AS props
+  CALL apoc.create.node(['PERSON','RESIDENT'], props) YIELD node
+  RETURN count(node) AS createdResidents
+  ", {batchSize:500, parallel:true});
+
+// 1.2 PERSON nodes with extra optional properties and multiple labels (RESIDENT, SENIOR)
+CALL apoc.periodic.iterate(
+  "UNWIND range(5001,6000) AS id RETURN id",
+  "
+  WITH id,
+       {
+         personId: 'P' + id,
+         firstName: 'SeniorFirst' + id,
+         lastName: 'SeniorLast' + id,
+         email: 'senior' + id + '@citymail.com',
+         age: toInteger(rand()*20+60),
+         occupation: 'Retired',
+         residentSince: date() - duration({years: toInteger(rand()*40+20)}),
+         address: 'Avenue ' + id,
+         income: round(rand()*50000,2),
+         pension: round(rand()*3000,2),
+         medicalPlan: CASE WHEN rand() < 0.7 THEN 'PlanA' ELSE 'PlanB' END,
+         hobbies: [ 'Gardening', 'Walking', 'Reading' ],
+         language: 'Local',
+         registeredAt: datetime() - duration({days: toInteger(rand()*1500)}),
+         creditScore: toInteger(rand()*750+100),
+         notes: 'Additional senior details for ' + id
+       } AS props
+  CALL apoc.create.node(['PERSON','RESIDENT','SENIOR'], props) YIELD node
+  RETURN count(node) AS createdSeniorResidents
+  ", {batchSize:200, parallel:true});
+
+// 1.3 PERSON nodes with dynamic properties (varying keys per node)
+CALL apoc.periodic.iterate(
+  "UNWIND range(6001,6500) AS id RETURN id",
+  "
+  WITH id,
+       apoc.map.mergeList([
+         { personId: 'P' + id, firstName: 'VariedFirst' + id, lastName: 'VariedLast' + id, email: 'varied' + id + '@citymail.com', registeredAt: datetime() },
+         CASE WHEN rand() < 0.5 THEN { favoriteColor: CASE WHEN rand() < 0.5 THEN 'Blue' ELSE 'Green' END } ELSE {} END,
+         CASE WHEN rand() < 0.5 THEN { luckyNumber: toInteger(rand()*100) } ELSE {} END,
+         CASE WHEN rand() < 0.3 THEN { extraNotes: 'Some extra info ' + id } ELSE {} END,
+         { geoCoordinates: [ round(rand()*180-90,4), round(rand()*360-180,4) ] }
+       ]) AS props
+  CALL apoc.create.node(['PERSON','VARIED'], props) YIELD node
+  RETURN count(node) AS createdVariedPersons
+  ", {batchSize:100, parallel:true});
+
+// =======================
+// 2. OFFICIAL / EMPLOYEE VARIATIONS
+// =======================
+
+// 2.1 OFFICIAL nodes with multi-labels (PERSON, OFFICIAL, EMPLOYEE)
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,1000) AS id RETURN id",
+  "
+  WITH id,
+       {
+         personId: 'O' + id,
+         firstName: 'OfficialFirst' + id,
+         lastName: 'OfficialLast' + id,
+         email: 'official' + id + '@govcity.com',
+         age: toInteger(rand()*30+30),
+         department: CASE WHEN rand() < 0.5 THEN 'Transport' ELSE 'Health' END,
+         position: CASE WHEN rand() < 0.5 THEN 'Manager' ELSE 'Clerk' END,
+         hireDate: date() - duration({years: toInteger(rand()*20)}),
+         salary: round(rand()*80000+30000,2),
+         clearanceLevel: toInteger(rand()*5),
+         officeLocation: 'Building ' + toString(toInteger(rand()*50)+1),
+         workEmail: 'official' + id + '@govcity.com',
+         projects: [ 'Project' + toString(toInteger(rand()*10)), 'Project' + toString(toInteger(rand()*10)) ],
+         certifications: [ 'CertA', 'CertB' ],
+         languages: [ 'English', 'Local' ],
+         active: rand() < 0.95
+       } AS props
+  CALL apoc.create.node(['PERSON','OFFICIAL','EMPLOYEE'], props) YIELD node
+  RETURN count(node) AS createdOfficials
+  ", {batchSize:200, parallel:true});
+
+// =======================
+// 3. DEVICE & SENSOR VARIATIONS
+// =======================
+
+// 3.1 DEVICE nodes with multi-type labels (DEVICE, CAMERA)
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,1500) AS id RETURN id",
+  "
+  WITH id,
+       {
+         deviceId: 'DEV' + id,
+         type: 'Camera',
+         manufacturer: 'CamCorp' + toString(toInteger(rand()*10)),
+         model: 'X' + toString(toInteger(rand()*100)),
+         installedAt: datetime() - duration({days: toInteger(rand()*2000)}),
+         status: CASE WHEN rand() < 0.85 THEN 'Active' ELSE 'Inactive' END,
+         batteryLevel: toInteger(rand()*100),
+         firmwareVersion: 'v' + toString(round(rand()*5,1)),
+         resolution: CASE WHEN rand() < 0.5 THEN '1080p' ELSE '4K' END,
+         locationDescription: 'Intersection ' + id,
+         usageHours: toInteger(rand()*5000),
+         ipAddress: '10.' + toString(toInteger(rand()*255)) + '.' + toString(toInteger(rand()*255)) + '.' + toString(toInteger(rand()*255))
+       } AS props
+  CALL apoc.create.node(['DEVICE','CAMERA'], props) YIELD node
+  RETURN count(node) AS createdCameras
+  ", {batchSize:150, parallel:true});
+
+// 3.2 DEVICE nodes as kiosks with extra properties
+CALL apoc.periodic.iterate(
+  "UNWIND range(1501,2000) AS id RETURN id",
+  "
+  WITH id,
+       {
+         deviceId: 'DEV' + id,
+         type: 'Kiosk',
+         manufacturer: 'KioskMaker' + toString(toInteger(rand()*5)),
+         model: 'K' + toString(toInteger(rand()*50)),
+         installedAt: datetime() - duration({days: toInteger(rand()*1500)}),
+         status: CASE WHEN rand() < 0.9 THEN 'Operational' ELSE 'OutOfService' END,
+         touchScreen: rand() < 0.8,
+         batteryBackup: rand() < 0.3,
+         locationDescription: 'Mall ' + toString(toInteger(rand()*100)+1),
+         usageHours: toInteger(rand()*10000),
+         ipAddress: '172.' + toString(toInteger(rand()*255)) + '.' + toString(toInteger(rand()*255)) + '.' + toString(toInteger(rand()*255)),
+         softwareVersion: 'KioskOS-' + toString(round(rand()*3,1))
+       } AS props
+  CALL apoc.create.node(['DEVICE','KIOSK'], props) YIELD node
+  RETURN count(node) AS createdKiosks
+  ", {batchSize:100, parallel:true});
+
+// 3.3 SENSOR nodes with multiple sensor types and array properties
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,3000) AS id RETURN id",
+  "
+  WITH id,
+       {
+         sensorId: 'SEN' + id,
+         sensorType: CASE 
+                        WHEN rand() < 0.33 THEN 'Temperature'
+                        WHEN rand() < 0.66 THEN 'AirQuality'
+                        ELSE 'Noise'
+                      END,
+         reading: round(rand()*100,2),
+         units: CASE WHEN rand() < 0.5 THEN 'Celsius' ELSE 'dB' END,
+         calibrationDates: [ datetime() - duration({days: toInteger(rand()*365)}), datetime() - duration({days: toInteger(rand()*365)}) ],
+         lastCalibration: datetime() - duration({days: toInteger(rand()*365)}),
+         accuracy: round(rand()*10,2),
+         manufacturer: 'SensorCo' + toString(toInteger(rand()*5)),
+         model: 'SModel' + toString(toInteger(rand()*50)),
+         installedAt: datetime() - duration({days: toInteger(rand()*1500)}),
+         locationInfo: 'Sector ' + toString(toInteger(rand()*100)),
+         maintenanceDue: datetime() + duration({days: toInteger(rand()*180)}),
+         batteryStatus: CASE WHEN rand() < 0.7 THEN 'Good' ELSE 'Replace Soon' END,
+         historicalReadings: [ round(rand()*100,2), round(rand()*100,2), round(rand()*100,2) ]
+       } AS props
+  CALL apoc.create.node(['SENSOR'], props) YIELD node
+  RETURN count(node) AS createdSensors
+  ", {batchSize:300, parallel:true});
+
+// =======================
+// 4. BUILDING & INFRASTRUCTURE VARIATIONS
+// =======================
+
+// 4.1 BUILDING nodes with standard properties
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,1000) AS id RETURN id",
+  "
+  WITH id,
+       {
+         buildingId: 'B' + id,
+         name: 'Building ' + id,
+         address: 'Avenue ' + id,
+         floors: toInteger(rand()*20+1),
+         yearBuilt: 1900 + toInteger(rand()*120),
+         owner: 'Owner ' + id,
+         occupancyRate: round(rand(),2),
+         energyConsumption: round(rand()*10000,2),
+         category: CASE WHEN rand() < 0.5 THEN 'Residential' ELSE 'Commercial' END,
+         parkingSpaces: toInteger(rand()*50),
+         architect: 'Architect' + toString(toInteger(rand()*20)),
+         amenities: ['Gym', 'Pool', 'Parking']
+       } AS props
+  CALL apoc.create.node(['BUILDING'], props) YIELD node
+  RETURN count(node) AS createdBuildings
+  ", {batchSize:250, parallel:true});
+
+// 4.2 BUILDING nodes with additional smart features (multi-label)
+CALL apoc.periodic.iterate(
+  "UNWIND range(1001,1200) AS id RETURN id",
+  "
+  WITH id,
+       {
+         buildingId: 'B' + id,
+         name: 'Smart Building ' + id,
+         address: 'Smart Ave ' + id,
+         floors: toInteger(rand()*20+1),
+         yearBuilt: 2000 + toInteger(rand()*20),
+         owner: 'SmartOwner ' + id,
+         occupancyRate: round(rand(),2),
+         energyConsumption: round(rand()*5000,2),
+         category: 'Smart',
+         parkingSpaces: toInteger(rand()*30),
+         architect: 'SmartArchitect' + toString(toInteger(rand()*10)),
+         sensorsInstalled: toInteger(rand()*50+5),
+         automationLevel: toInteger(rand()*10),
+         connectivity: ['WiFi','5G','Ethernet']
+       } AS props
+  CALL apoc.create.node(['BUILDING','SMART'], props) YIELD node
+  RETURN count(node) AS createdSmartBuildings
+  ", {batchSize:100, parallel:true});
+
+// =======================
+// 5. LOCATION & GEOGRAPHIC VARIATIONS
+// =======================
+
+// 5.1 LOCATION nodes with standard geographic properties
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,500) AS id RETURN id",
+  "
+  WITH id,
+       {
+         locationId: 'L' + id,
+         city: 'City' + toString(toInteger(rand()*20)),
+         district: 'District' + toString(toInteger(rand()*50)),
+         latitude: round(rand()*180-90,6),
+         longitude: round(rand()*360-180,6),
+         postalCode: toString(10000 + toInteger(rand()*90000)),
+         region: CASE WHEN rand() < 0.5 THEN 'North' ELSE 'South' END,
+         area: round(rand()*300,2),
+         population: toInteger(rand()*1000000),
+         landmark: CASE WHEN rand() < 0.3 THEN 'Landmark' + id ELSE null END,
+         timezone: 'GMT' + (toInteger(rand()*5)-2),
+         geoJSON: '{ \"type\": \"Point\", \"coordinates\": [' + round(rand()*360-180,6) + ',' + round(rand()*180-90,6) + '] }'
+       } AS props
+  CALL apoc.create.node(['LOCATION'], props) YIELD node
+  RETURN count(node) AS createdLocations
+  ", {batchSize:100, parallel:true});
+
+// 5.2 LOCATION nodes with extra metadata (multi-label: LOCATION, METRO)
+CALL apoc.periodic.iterate(
+  "UNWIND range(501,600) AS id RETURN id",
+  "
+  WITH id,
+       {
+         locationId: 'L' + id,
+         city: 'MetroCity' + toString(toInteger(rand()*10)),
+         district: 'Central',
+         latitude: round(rand()*180-90,6),
+         longitude: round(rand()*360-180,6),
+         postalCode: toString(10000 + toInteger(rand()*90000)),
+         region: 'Metro',
+         area: round(rand()*500,2),
+         population: toInteger(rand()*2000000),
+         landmark: 'Central Plaza ' + id,
+         timezone: 'GMT+1',
+         attractions: [ 'Museum', 'Park', 'Gallery' ]
+       } AS props
+  CALL apoc.create.node(['LOCATION','METRO'], props) YIELD node
+  RETURN count(node) AS createdMetroLocations
+  ", {batchSize:50, parallel:true});
+
+// =======================
+// 6. SERVICE & UTILITY VARIATIONS
+// =======================
+
+// 6.1 SERVICE nodes for public services
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,800) AS id RETURN id",
+  "
+  WITH id,
+       {
+         serviceId: 'SV' + id,
+         name: 'Service ' + id,
+         description: 'Service description ' + id,
+         provider: 'Provider' + toString(toInteger(rand()*10)),
+         status: CASE WHEN rand() < 0.9 THEN 'Operational' ELSE 'Down' END,
+         serviceLevel: toInteger(rand()*5+1),
+         cost: round(rand()*500,2),
+         contractStart: date() - duration({years: toInteger(rand()*5)}),
+         contractEnd: date() + duration({years: toInteger(rand()*5)}),
+         rating: round(rand()*5,2),
+         category: CASE WHEN rand() < 0.5 THEN 'Transit' ELSE 'Utilities' END,
+         responseTime: round(rand()*60,2),
+         supportContact: 'support' + id + '@service.com'
+       } AS props
+  CALL apoc.create.node(['SERVICE'], props) YIELD node
+  RETURN count(node) AS createdServices
+  ", {batchSize:200, parallel:true});
+
+// 6.2 UTILITY nodes for energy and water
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,600) AS id RETURN id",
+  "
+  WITH id,
+       {
+         utilityId: 'UT' + id,
+         name: 'Utility ' + id,
+         type: CASE WHEN rand() < 0.5 THEN 'Electricity' ELSE 'Water' END,
+         capacity: round(rand()*10000,2),
+         usage: round(rand()*10000,2),
+         provider: 'UtilityProvider' + toString(toInteger(rand()*5)),
+         contractNumber: 'CN' + id,
+         installedAt: datetime() - duration({years: toInteger(rand()*10)}),
+         status: CASE WHEN rand() < 0.85 THEN 'Active' ELSE 'Inactive' END,
+         energySource: CASE WHEN rand() < 0.5 THEN 'Renewable' ELSE 'Non-Renewable' END,
+         outageFrequency: toInteger(rand()*10),
+         maintenanceSchedule: [ date() - duration({days:10}), date() + duration({days:30}) ]
+       } AS props
+  CALL apoc.create.node(['UTILITY'], props) YIELD node
+  RETURN count(node) AS createdUtilities
+  ", {batchSize:100, parallel:true});
+
+// =======================
+// 7. INCIDENT, MAINTENANCE, & EVENT VARIATIONS
+// =======================
+
+// 7.1 INCIDENT nodes with extra details
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,1500) AS id RETURN id",
+  "
+  WITH id,
+       {
+         incidentId: 'INC' + id,
+         type: CASE WHEN rand() < 0.5 THEN 'Traffic' ELSE 'Safety' END,
+         description: 'Incident description ' + id,
+         reportedAt: datetime() - duration({hours: toInteger(rand()*5000)}),
+         severity: toInteger(rand()*5+1),
+         resolvedAt: CASE WHEN rand() < 0.6 THEN datetime() - duration({hours: toInteger(rand()*1000)}) ELSE null END,
+         location: 'Location ' + toString(toInteger(rand()*500)),
+         reporter: 'Reporter' + id,
+         status: CASE WHEN rand() < 0.7 THEN 'Resolved' ELSE 'Open' END,
+         impact: round(rand()*10,2),
+         tags: [ 'urgent', 'city' ]
+       } AS props
+  CALL apoc.create.node(['INCIDENT'], props) YIELD node
+  RETURN count(node) AS createdIncidents
+  ", {batchSize:150, parallel:true});
+
+// 7.2 MAINTENANCE nodes with multiple target types (multi-label optional on target)
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,1000) AS id RETURN id",
+  "
+  WITH id,
+       {
+         maintenanceId: 'MT' + id,
+         task: 'Maintenance task ' + id,
+         performedAt: datetime() - duration({days: toInteger(rand()*365)}),
+         durationHours: toInteger(rand()*8+1),
+         technician: 'Tech' + toString(toInteger(rand()*100)),
+         cost: round(rand()*1000,2),
+         remarks: 'Remarks for maintenance ' + id,
+         targetType: CASE WHEN rand() < 0.33 THEN 'Building' WHEN rand() < 0.66 THEN 'Device' ELSE 'Sensor' END,
+         partsReplaced: toInteger(rand()*5),
+         downtimeHours: toInteger(rand()*3),
+         scheduled: rand() < 0.5
+       } AS props
+  CALL apoc.create.node(['MAINTENANCE'], props) YIELD node
+  RETURN count(node) AS createdMaintenanceTasks
+  ", {batchSize:150, parallel:true});
+
+// 7.3 EVENT nodes for community events, festivals, etc.
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,800) AS id RETURN id",
+  "
+  WITH id,
+       {
+         eventId: 'EV' + id,
+         title: 'Community Event ' + id,
+         description: 'Event description ' + id,
+         date: datetime() + duration({days: toInteger(rand()*365)}),
+         organizer: 'Organizer' + id,
+         location: 'Location ' + toString(toInteger(rand()*500)),
+         attendance: toInteger(rand()*1000),
+         eventType: CASE WHEN rand() < 0.5 THEN 'Festival' ELSE 'Meeting' END,
+         durationHours: toInteger(rand()*8+1),
+         cost: round(rand()*200,2),
+         sponsors: 'Sponsor' + toString(toInteger(rand()*10)),
+         theme: 'Theme' + toString(toInteger(rand()*5)),
+         extraInfo: { music: CASE WHEN rand() < 0.5 THEN 'Live' ELSE 'DJ' END, food: 'Various' }
+       } AS props
+  CALL apoc.create.node(['EVENT'], props) YIELD node
+  RETURN count(node) AS createdCommunityEvents
+  ", {batchSize:100, parallel:true});
+
+// =======================
+// 8. COMPANY, BLOG, AUTHOR, COMMENT, REVIEW, PRODUCT, ORDER, COUPON, PAYMENT, SHIPPING, RETURN, FAQ, TAG Variations
+// (Below are additional calls to add extreme variation across business and commerce domains)
+// =======================
+
+// 8.1 COMPANY nodes with detailed properties
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,400) AS id RETURN id",
+  "
+  WITH id,
+       {
+         companyId: 'C' + id,
+         name: 'Company ' + id,
+         industry: CASE WHEN rand() < 0.5 THEN 'Construction' ELSE 'Tech' END,
+         founded: date() - duration({years: toInteger(rand()*50)}),
+         CEO: 'CEO ' + id,
+         revenue: round(rand()*10000000,2),
+         employees: toInteger(rand()*5000),
+         headquarters: 'Headquarters ' + id,
+         rating: round(rand()*5,2),
+         slogan: 'Slogan ' + id,
+         marketShare: round(rand()*100,2),
+         subsidiaries: [ 'Sub' + id, 'Sub' + toString(id+1) ],
+         globalPresence: rand() < 0.8
+       } AS props
+  CALL apoc.create.node(['COMPANY'], props) YIELD node
+  RETURN count(node) AS createdCompanies
+  ", {batchSize:100, parallel:true});
+
+// 8.2 BLOG nodes with multi-valued properties
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,1000) AS id RETURN id",
+  "
+  WITH id,
+       {
+         blogId: 'BL' + id,
+         title: 'Blog Post ' + id,
+         content: 'Content for blog post ' + id,
+         publishedAt: datetime() - duration({days: toInteger(rand()*500)}),
+         author: 'Author' + toString(toInteger(rand()*200)),
+         category: CASE WHEN rand() < 0.5 THEN 'News' ELSE 'Lifestyle' END,
+         views: toInteger(rand()*10000),
+         likes: toInteger(rand()*1000),
+         tags: split('Tag' + id + ',Tag' + (id+1) + ',Tag' + (id+2), ','),
+         commentsCount: toInteger(rand()*200),
+         multimedia: { images: ['img' + id + '.jpg', 'img' + (id+1) + '.jpg'], videos: ['vid' + id + '.mp4'] }
+       } AS props
+  CALL apoc.create.node(['BLOG'], props) YIELD node
+  RETURN count(node) AS createdBlogs
+  ", {batchSize:100, parallel:true});
+
+// 8.3 AUTHOR nodes with diverse property types
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,300) AS id RETURN id",
+  "
+  WITH id,
+       {
+         authorId: 'A' + id,
+         firstName: 'AuthorFirst' + id,
+         lastName: 'AuthorLast' + id,
+         email: 'author' + id + '@smartcity.com',
+         bio: 'Bio of author ' + id,
+         joinedAt: datetime() - duration({days: toInteger(rand()*1000)}),
+         articles: toInteger(rand()*100),
+         rating: round(rand()*5,2),
+         website: 'http://author' + id + '.com',
+         socialHandles: { twitter: 'tw' + id, facebook: 'fb' + id },
+         specialties: [ 'Specialty' + toString(toInteger(rand()*10)), 'Specialty' + toString(toInteger(rand()*10)) ]
+       } AS props
+  CALL apoc.create.node(['AUTHOR'], props) YIELD node
+  RETURN count(node) AS createdAuthors
+  ", {batchSize:50, parallel:true});
+
+// 8.4 COMMENT nodes with varied text and nested properties
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,1500) AS id RETURN id",
+  "
+  WITH id,
+       {
+         commentId: 'CM' + id,
+         text: 'Comment text ' + id,
+         postedAt: datetime() - duration({minutes: toInteger(rand()*10000)}),
+         author: 'Commenter' + id,
+         likes: toInteger(rand()*200),
+         flagged: rand() < 0.1,
+         sentiment: toInteger(rand()*3)-1,
+         metadata: { device: CASE WHEN rand() < 0.5 THEN 'mobile' ELSE 'desktop' END, location: 'Loc' + id }
+       } AS props
+  CALL apoc.create.node(['COMMENT'], props) YIELD node
+  RETURN count(node) AS createdComments
+  ", {batchSize:100, parallel:true});
+
+// 8.5 REVIEW nodes with detailed review properties
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,1000) AS id RETURN id",
+  "
+  WITH id,
+       {
+         reviewId: 'RV' + id,
+         rating: toInteger(rand()*5+1),
+         text: 'Review text ' + id,
+         reviewedAt: datetime() - duration({days: toInteger(rand()*365)}),
+         reviewer: 'Reviewer' + id,
+         productId: 'P' + toString(toInteger(rand()*1200)+1),
+         pros: 'Pros ' + id,
+         cons: 'Cons ' + id,
+         verified: rand() < 0.7,
+         helpfulVotes: toInteger(rand()*100),
+         detailedFeedback: { clarity: round(rand()*5,2), value: round(rand()*5,2) }
+       } AS props
+  CALL apoc.create.node(['REVIEW'], props) YIELD node
+  RETURN count(node) AS createdReviews
+  ", {batchSize:100, parallel:true});
+
+// 8.6 PRODUCT nodes with extensive properties
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,1200) AS id RETURN id",
+  "
+  WITH id,
+       {
+         productId: 'P' + id,
+         name: 'Product ' + id,
+         description: 'Description for product ' + id,
+         price: round(rand()*1000,2),
+         category: CASE WHEN rand() < 0.5 THEN 'Electronics' ELSE 'Home' END,
+         brand: 'Brand' + toString(toInteger(rand()*20)),
+         releaseDate: date() - duration({days: toInteger(rand()*1000)}),
+         warrantyMonths: toInteger(rand()*36+6),
+         rating: round(rand()*5,2),
+         reviewsCount: toInteger(rand()*200),
+         stock: toInteger(rand()*1000),
+         sku: 'SKU' + id,
+         color: CASE WHEN rand() < 0.5 THEN 'Red' ELSE 'Blue' END,
+         weight: round(rand()*5,2),
+         dimensions: 'Dim' + id,
+         material: 'Material' + toString(toInteger(rand()*5)),
+         features: [ 'Feature' + toString(toInteger(rand()*10)), 'Feature' + toString(toInteger(rand()*10)) ],
+         tags: split('Tag' + id + ',Tag' + (id+1), ',')
+       } AS props
+  CALL apoc.create.node(['PRODUCT'], props) YIELD node
+  RETURN count(node) AS createdProducts
+  ", {batchSize:100, parallel:true});
+
+// 8.7 ORDER nodes with detailed commerce properties
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,800) AS id RETURN id",
+  "
+  WITH id,
+       {
+         orderId: 'O' + id,
+         orderDate: datetime() - duration({days: toInteger(rand()*365)}),
+         status: CASE WHEN rand() < 0.8 THEN 'Completed' ELSE 'Pending' END,
+         totalAmount: round(rand()*500,2),
+         customerId: 'person' + toString(toInteger(rand()*5000)+1),
+         shippingMethod: CASE WHEN rand() < 0.5 THEN 'Standard' ELSE 'Express' END,
+         trackingNumber: 'TRK' + id,
+         discountApplied: round(rand()*50,2),
+         tax: round(rand()*20,2),
+         paymentStatus: CASE WHEN rand() < 0.9 THEN 'Paid' ELSE 'Unpaid' END,
+         items: [ 'P' + toString(toInteger(rand()*1200)+1), 'P' + toString(toInteger(rand()*1200)+1) ]
+       } AS props
+  CALL apoc.create.node(['ORDER'], props) YIELD node
+  RETURN count(node) AS createdOrders
+  ", {batchSize:100, parallel:true});
+
+// 8.8 COUPON nodes for discount codes
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,300) AS id RETURN id",
+  "
+  WITH id,
+       {
+         couponId: 'CP' + id,
+         code: 'DISCOUNT' + id,
+         discount: round(rand()*100,2),
+         expiresAt: datetime() + duration({days: toInteger(rand()*90)}),
+         usageCount: toInteger(rand()*100),
+         maxUsage: toInteger(rand()*200+50),
+         description: 'Coupon ' + id + ' description',
+         applicableCategories: CASE WHEN rand() < 0.5 THEN 'Electronics,Home' ELSE 'Fashion,Beauty' END,
+         minimumPurchase: round(rand()*200,2),
+         active: rand() < 0.8
+       } AS props
+  CALL apoc.create.node(['COUPON'], props) YIELD node
+  RETURN count(node) AS createdCoupons
+  ", {batchSize:50, parallel:true});
+
+// 8.9 PAYMENT nodes for transactions
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,600) AS id RETURN id",
+  "
+  WITH id,
+       {
+         paymentId: 'PAY' + id,
+         amount: round(rand()*1000,2),
+         method: CASE WHEN rand() < 0.5 THEN 'Credit Card' ELSE 'PayPal' END,
+         paidAt: datetime() - duration({hours: toInteger(rand()*500)}),
+         status: CASE WHEN rand() < 0.9 THEN 'Success' ELSE 'Failed' END,
+         transactionId: 'TX' + id,
+         currency: 'USD',
+         gateway: 'Gateway' + toString(toInteger(rand()*5)),
+         fee: round(rand()*20,2),
+         refund: CASE WHEN rand() < 0.1 THEN round(rand()*100,2) ELSE 0 END,
+         metadata: { ip: '192.168.'+toString(toInteger(rand()*255))+'.'+toString(toInteger(rand()*255)) }
+       } AS props
+  CALL apoc.create.node(['PAYMENT'], props) YIELD node
+  RETURN count(node) AS createdPayments
+  ", {batchSize:50, parallel:true});
+
+// 8.10 SHIPPING nodes for delivery info
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,500) AS id RETURN id",
+  "
+  WITH id,
+       {
+         shippingId: 'SHIP' + id,
+         carrier: 'Carrier' + toString(toInteger(rand()*10)),
+         trackingNumber: 'TRACK' + id,
+         shippedAt: datetime() - duration({days: toInteger(rand()*30)}),
+         estimatedDelivery: datetime() + duration({days: toInteger(rand()*10)}),
+         status: CASE WHEN rand() < 0.8 THEN 'In Transit' ELSE 'Delivered' END,
+         cost: round(rand()*50,2),
+         weight: round(rand()*10,2),
+         dimensions: 'Dim' + id,
+         notes: 'Delivery note ' + id
+       } AS props
+  CALL apoc.create.node(['SHIPPING'], props) YIELD node
+  RETURN count(node) AS createdShippingRecords
+  ", {batchSize:50, parallel:true});
+
+// 8.11 RETURN nodes for order returns
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,200) AS id RETURN id",
+  "
+  WITH id,
+       {
+         returnId: 'RET' + id,
+         orderId: 'O' + toString(toInteger(rand()*800)+1),
+         reason: CASE WHEN rand() < 0.5 THEN 'Defective' ELSE 'Not as described' END,
+         initiatedAt: datetime() - duration({days: toInteger(rand()*30)}),
+         resolvedAt: CASE WHEN rand() < 0.7 THEN datetime() - duration({days: toInteger(rand()*10)}) ELSE null END,
+         status: CASE WHEN rand() < 0.8 THEN 'Processed' ELSE 'Pending' END,
+         refundAmount: round(rand()*100,2),
+         itemsCount: toInteger(rand()*5+1)
+       } AS props
+  CALL apoc.create.node(['RETURN'], props) YIELD node
+  RETURN count(node) AS createdReturns
+  ", {batchSize:50, parallel:true});
+
+// 8.12 FAQ nodes for help/support content
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,300) AS id RETURN id",
+  "
+  WITH id,
+       {
+         faqId: 'FAQ' + id,
+         question: 'What is question ' + id + '?',
+         answer: 'Answer for question ' + id,
+         category: CASE WHEN rand() < 0.5 THEN 'General' ELSE 'Technical' END,
+         views: toInteger(rand()*10000),
+         likes: toInteger(rand()*500),
+         updatedAt: datetime() - duration({days: toInteger(rand()*365)}),
+         relatedTopics: split('Topic' + id + ',Topic' + (id+1), ',')
+       } AS props
+  CALL apoc.create.node(['FAQ'], props) YIELD node
+  RETURN count(node) AS createdFAQs
+  ", {batchSize:50, parallel:true});
+
+// 8.13 TAG nodes for content categorization
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,500) AS id RETURN id",
+  "
+  WITH id,
+       {
+         tagId: 'T' + id,
+         name: 'Tag' + id,
+         relevance: round(rand()*10,2),
+         description: 'Description for tag ' + id,
+         createdAt: datetime() - duration({days: toInteger(rand()*1000)}),
+         usageCount: toInteger(rand()*1000),
+         synonyms: [ 'Syn' + id, 'Syn' + toString(id+1) ]
+       } AS props
+  CALL apoc.create.node(['TAG'], props) YIELD node
+  RETURN count(node) AS createdTags
+  ", {batchSize:50, parallel:true});
+
+// =======================
+// 9. RELATIONSHIP CREATION ACROSS DOMAINS
+// =======================
+
+// PERSON LIVES_IN LOCATION
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (l:LOCATION) WHERE rand() < 0.05 RETURN p, l",
+  "CREATE (p)-[:LIVES_IN]->(l)",
+  {batchSize:100, parallel:true});
+
+// PERSON WORKS_FOR COMPANY
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (c:COMPANY) WHERE rand() < 0.03 RETURN p, c",
+  "CREATE (p)-[:WORKS_FOR { since: date() - duration({years: toInteger(rand()*20)}) }]->(c)",
+  {batchSize:50, parallel:true});
+
+// DEVICE INSTALLED_IN BUILDING
+CALL apoc.periodic.iterate(
+  "MATCH (d:DEVICE), (b:BUILDING) WHERE rand() < 0.03 RETURN d, b",
+  "CREATE (d)-[:INSTALLED_IN]->(b)",
+  {batchSize:50, parallel:true});
+
+// SENSOR CONNECTED_TO DEVICE
+CALL apoc.periodic.iterate(
+  "MATCH (s:SENSOR), (d:DEVICE) WHERE rand() < 0.03 RETURN s, d",
+  "CREATE (s)-[:CONNECTED_TO]->(d)",
+  {batchSize:50, parallel:true});
+
+// BUILDING OWNED_BY COMPANY
+CALL apoc.periodic.iterate(
+  "MATCH (b:BUILDING), (c:COMPANY) WHERE rand() < 0.05 RETURN b, c",
+  "CREATE (c)-[:OWNS]->(b)",
+  {batchSize:50, parallel:true});
+
+// PERSON USES SERVICE
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (s:SERVICE) WHERE rand() < 0.03 RETURN p, s",
+  "CREATE (p)-[:USES_SERVICE { since: datetime() - duration({days: toInteger(rand()*1000)}) }]->(s)",
+  {batchSize:50, parallel:true});
+
+// INCIDENT OCCURRED_AT LOCATION
+CALL apoc.periodic.iterate(
+  "MATCH (i:INCIDENT), (l:LOCATION) WHERE rand() < 0.05 RETURN i, l",
+  "CREATE (i)-[:OCCURRED_AT]->(l)",
+  {batchSize:50, parallel:true});
+
+// INCIDENT AFFECTS BUILDING
+CALL apoc.periodic.iterate(
+  "MATCH (i:INCIDENT), (b:BUILDING) WHERE rand() < 0.03 RETURN i, b",
+  "CREATE (i)-[:AFFECTS]->(b)",
+  {batchSize:50, parallel:true});
+
+// MAINTENANCE PERFORMED_ON (Device, Sensor, Building)
+CALL apoc.periodic.iterate(
+  "MATCH (m:MAINTENANCE), (d:DEVICE) WHERE m.targetType = 'Device' AND rand() < 0.1 RETURN m, d",
+  "CREATE (m)-[:PERFORMED_ON]->(d)",
+  {batchSize:50, parallel:true});
+CALL apoc.periodic.iterate(
+  "MATCH (m:MAINTENANCE), (s:SENSOR) WHERE m.targetType = 'Sensor' AND rand() < 0.1 RETURN m, s",
+  "CREATE (m)-[:PERFORMED_ON]->(s)",
+  {batchSize:50, parallel:true});
+CALL apoc.periodic.iterate(
+  "MATCH (m:MAINTENANCE), (b:BUILDING) WHERE m.targetType = 'Building' AND rand() < 0.1 RETURN m, b",
+  "CREATE (m)-[:PERFORMED_ON]->(b)",
+  {batchSize:50, parallel:true});
+
+// PERSON WROTE BLOG
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (b:BLOG) WHERE rand() < 0.02 RETURN p, b",
+  "CREATE (p)-[:WROTE]->(b)",
+  {batchSize:50, parallel:true});
+
+// AUTHOR AUTHORED BLOG
+CALL apoc.periodic.iterate(
+  "MATCH (a:AUTHOR), (b:BLOG) WHERE rand() < 0.05 RETURN a, b",
+  "CREATE (a)-[:AUTHORED]->(b)",
+  {batchSize:50, parallel:true});
+
+// BLOG HAS_COMMENT (COMMENT)
+CALL apoc.periodic.iterate(
+  "MATCH (b:BLOG), (c:COMMENT) WHERE rand() < 0.03 RETURN b, c",
+  "CREATE (c)-[:COMMENT_ON]->(b)",
+  {batchSize:50, parallel:true});
+
+// REVIEW REVIEWS PRODUCT
+CALL apoc.periodic.iterate(
+  "MATCH (p:PRODUCT), (r:REVIEW) WHERE r.productId = p.productId AND rand() < 0.05 RETURN p, r",
+  "CREATE (r)-[:REVIEWS]->(p)",
+  {batchSize:50, parallel:true});
+
+// ORDER CONTAINS PRODUCT
+CALL apoc.periodic.iterate(
+  "MATCH (o:ORDER), (p:PRODUCT) WHERE rand() < 0.05 RETURN o, p",
+  "CREATE (o)-[:CONTAINS]->(p)",
+  {batchSize:50, parallel:true});
+
+// ORDER PAID_WITH PAYMENT
+CALL apoc.periodic.iterate(
+  "MATCH (o:ORDER), (pay:PAYMENT) WHERE rand() < 0.03 RETURN o, pay",
+  "CREATE (o)-[:PAID_WITH]->(pay)",
+  {batchSize:50, parallel:true});
+
+// ORDER SHIPPED_VIA SHIPPING
+CALL apoc.periodic.iterate(
+  "MATCH (o:ORDER), (ship:SHIPPING) WHERE rand() < 0.03 RETURN o, ship",
+  "CREATE (o)-[:SHIPPED_VIA]->(ship)",
+  {batchSize:50, parallel:true});
+
+// ORDER HAS_RETURN
+CALL apoc.periodic.iterate(
+  "MATCH (o:ORDER), (r:RETURN) WHERE r.orderId = o.orderId AND rand() < 0.02 RETURN o, r",
+  "CREATE (o)-[:HAS_RETURN]->(r)",
+  {batchSize:50, parallel:true});
+
+// FAQ TAGGED_WITH TAG
+CALL apoc.periodic.iterate(
+  "MATCH (f:FAQ), (t:TAG) WHERE rand() < 0.05 RETURN f, t",
+  "CREATE (f)-[:TAGGED_WITH]->(t)",
+  {batchSize:50, parallel:true});

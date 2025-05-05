@@ -1,0 +1,673 @@
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,100000) AS id RETURN id",
+  "CREATE (:PERSON {
+      firstName: 'First' + id,
+      lastName: 'Last' + id,
+      age: toInteger(rand()*80 + 18),
+      email: 'user' + id + '@example.com',
+      createdAt: datetime(),
+      bio: 'Bio för användare ' + id
+  })",
+  {batchSize:1000, parallel:true}
+);
+
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON) RETURN p LIMIT 90000",
+  "MATCH (q:PERSON) WHERE q <> p AND rand() < 0.05 
+   CREATE (p)-[:FRIENDS_WITH {friends_since: datetime()}]->(q)",
+  {batchSize:1000, parallel:true}
+);
+
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,5000) AS id RETURN id",
+  "CREATE (:ORGANIZATION {
+      name: 'Org' + id,
+      industry: CASE WHEN rand() < 0.5 THEN 'Tech' ELSE 'Finance' END,
+      founded: date() - duration({years: toInteger(rand()*30 + 1)})
+  })",
+  {batchSize:1000, parallel:true}
+);
+
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,3000) AS id RETURN id",
+  "CREATE (:EVENT {
+      title: 'Event ' + id,
+      date: datetime() + duration({days: toInteger(rand()*365)}),
+      location: 'Location ' + toString(toInteger(rand()*100))
+  })",
+  {batchSize:500, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,2000) AS id RETURN id",
+  "CREATE (:GROUP {
+      name: 'Group ' + id,
+      description: 'Description for group ' + id
+  })",
+  {batchSize:200, parallel:true}
+);
+
+
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,1500) AS id RETURN id",
+  "CREATE (:PAGE {
+      name: 'Page ' + id,
+      category: CASE WHEN rand() < 0.5 THEN 'Entertainment' ELSE 'News' END
+  })",
+  {batchSize:150, parallel:true}
+);
+
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,100) AS id RETURN id",
+  "CREATE (:INTEREST { name: 'Interest ' + id })",
+  {batchSize:50, parallel:true}
+);
+
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,500) AS id RETURN id",
+  "CREATE (:LOCATION {
+      city: 'City ' + toString(toInteger(rand()*100)),
+      country: CASE WHEN rand() < 0.7 THEN 'Sweden' ELSE 'Norway' END
+  })",
+  {batchSize:100, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (org:ORGANIZATION) WHERE rand() < 0.001 RETURN p, org",
+  "CREATE (p)-[:WORKS_FOR { since: datetime() - duration({years: toInteger(rand()*10)}) }]->(org)",
+  {batchSize:500, parallel:true}
+);
+
+
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (e:EVENT) WHERE rand() < 0.005 RETURN p, e",
+  "CREATE (p)-[:ATTENDS]->(e)",
+  {batchSize:500, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON) WITH p, ['PAGE','GROUP','INTEREST'] AS targets
+   UNWIND targets AS t
+   MATCH (target) WHERE target:PAGE OR target:GROUP OR target:INTEREST
+   WITH p, target WHERE rand() < 0.002 RETURN p, target",
+  "CREATE (p)-[:LIKES { likedAt: datetime() - duration({days: toInteger(rand()*365)}) }]->(target)",
+  {batchSize:500, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON) WITH p, ['PAGE','GROUP','INTEREST'] AS targets
+   UNWIND targets AS t
+   MATCH (target) WHERE target:PAGE OR target:GROUP OR target:INTEREST
+   WITH p, target WHERE rand() < 0.002 RETURN p, target",
+  "CREATE (p)-[:LIKES { likedAt: datetime() - duration({days: toInteger(rand()*365)}) }]->(target)",
+  {batchSize:500, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "MATCH (n) WHERE n:PERSON OR n:ORGANIZATION OR n:EVENT
+   WITH n, apoc.coll.randomItem((MATCH (l:LOCATION) RETURN collect(l))) AS loc
+   RETURN n, loc",
+  "CREATE (n)-[:LOCATED_IN]->(loc)",
+  {batchSize:300, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "MATCH (p1:PERSON), (p2:PERSON) WHERE p1 <> p2 AND rand() < 0.001 RETURN p1, p2",
+  "CREATE (p1)-[:MESSAGED { sentAt: datetime() - duration({minutes: toInteger(rand()*10000)}) }]->(p2)",
+  {batchSize:500, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "MATCH (p1:PERSON), (p2:PERSON) WHERE p1 <> p2 AND rand() < 0.002 RETURN p1, p2",
+  "CREATE (p1)-[:FOLLOWS]->(p2)",
+  {batchSize:500, parallel:true}
+);
+// Mark some PERSON nodes as STUDENT
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON) WHERE rand() < 0.3 RETURN p",
+  "SET p :STUDENT",
+  {batchSize:1000, parallel:true}
+);
+
+// Mark some PERSON nodes as TEACHER (ensuring they are not also STUDENT)
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON) WHERE NOT p:STUDENT AND rand() < 0.1 RETURN p",
+  "SET p :TEACHER",
+  {batchSize:1000, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "MATCH (p1:PERSON), (p2:PERSON) WHERE p1 <> p2 AND rand() < 0.005 RETURN p1, p2",
+  "CREATE (p1)-[:FRIENDS_WITH { friends_since: datetime() - duration({days: toInteger(rand()*2000)}) }]->(p2)",
+  {batchSize:500, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,200000) AS id RETURN id",
+  "CREATE (:PERSON {
+      firstName: 'First' + id,
+      lastName: 'Last' + id,
+      age: toInteger(rand()*80 + 18),
+      email: 'user' + id + '@example.com',
+      createdAt: datetime(),
+      bio: 'Bio for user ' + id,
+      hobby: 'Hobby ' + toString(toInteger(rand()*50)),
+      status: CASE WHEN rand() < 0.5 THEN 'active' ELSE 'inactive' END,
+      reputation: toInteger(rand()*1000),
+      postsCount: toInteger(rand()*1000),
+      friendsCount: 0,  // Will update later based on relationships
+      visits: toInteger(rand()*500),
+      interests: 'Interest' + toString(toInteger(rand()*20)),
+      lastActive: datetime() - duration({days: toInteger(rand()*365)}),
+      premiumUser: rand() < 0.1,
+      locale: 'Locale' + toString(toInteger(rand()*10))
+  })",
+  {batchSize:1000, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,10000) AS id RETURN id",
+  "CREATE (:ORGANIZATION {
+      name: 'Organization ' + id,
+      industry: CASE WHEN rand() < 0.5 THEN 'Tech' ELSE 'Finance' END,
+      founded: date() - duration({years: toInteger(rand()*30 + 1)}),
+      employees: toInteger(rand()*1000),
+      revenue: round(rand()*1000000,2),
+      location: 'City' + toString(toInteger(rand()*100)),
+      ceo: 'CEO ' + id,
+      marketCap: round(rand()*5000000,2),
+      branches: toInteger(rand()*50)
+  })",
+  {batchSize:1000, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON) RETURN p",
+  "WITH p, apoc.coll.randomItems(collect(p), 2) AS potentialFriends
+   FOREACH(friend IN potentialFriends |
+     FOREACH(ignoreMe IN CASE WHEN p <> friend AND rand() < 0.05 THEN [1] ELSE [] END |
+       CREATE (p)-[:FRIENDS_WITH { friends_since: datetime() - duration({days: toInteger(rand()*2000)}) }]->(friend)
+     )
+   )",
+  {batchSize:1000, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (org:ORGANIZATION) WHERE rand() < 0.001 RETURN p, org",
+  "MERGE (p)-[:WORKS_FOR { since: datetime() - duration({years: toInteger(rand()*10)}) }]->(org)",
+  {batchSize:500, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON) RETURN p",
+  "SET p.friendsCount = size((p)-[:FRIENDS_WITH]->())",
+  {batchSize:1000, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,200000) AS id RETURN id",
+  "CREATE (:PERSON {
+      firstName: 'First' + id,
+      lastName: 'Last' + id,
+      age: toInteger(rand()*80 + 18),
+      email: 'user' + id + '@example.com',
+      createdAt: datetime(),
+      bio: 'Bio for user ' + id,
+      hobby: 'Hobby ' + toString(toInteger(rand()*50)),
+      status: CASE WHEN rand() < 0.5 THEN 'active' ELSE 'inactive' END,
+      reputation: toInteger(rand()*1000),
+      postsCount: toInteger(rand()*1000),
+      friendsCount: 0,  // To be updated later
+      visits: toInteger(rand()*500),
+      interests: 'Interest ' + toString(toInteger(rand()*20)),
+      lastActive: datetime() - duration({days: toInteger(rand()*365)}),
+      premiumUser: rand() < 0.1,
+      locale: 'Locale' + toString(toInteger(rand()*10))
+  })",
+  {batchSize:1000, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,10000) AS id RETURN id",
+  "CREATE (:ORGANIZATION {
+      name: 'Organization ' + id,
+      industry: CASE WHEN rand() < 0.5 THEN 'Tech' ELSE 'Finance' END,
+      founded: date() - duration({years: toInteger(rand()*30 + 1)}),
+      employees: toInteger(rand()*1000),
+      revenue: round(rand()*1000000,2),
+      location: 'City' + toString(toInteger(rand()*100)),
+      ceo: 'CEO ' + id,
+      marketCap: round(rand()*5000000,2),
+      branches: toInteger(rand()*50)
+  })",
+  {batchSize:1000, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,50000) AS id RETURN id",
+  "CREATE (:EVENT {
+      title: 'Event ' + id,
+      date: datetime() + duration({days: toInteger(rand()*365)}),
+      location: 'Venue ' + toString(toInteger(rand()*500)),
+      description: 'Description for event ' + id,
+      category: CASE WHEN rand() < 0.5 THEN 'Music' ELSE 'Conference' END,
+      attendance: toInteger(rand()*500),
+      organizer: 'Organizer ' + toString(toInteger(rand()*100))
+  })",
+  {batchSize:1000, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,20000) AS id RETURN id",
+  "CREATE (:GROUP {
+      name: 'Group ' + id,
+      description: 'This is group ' + id,
+      createdAt: datetime() - duration({days: toInteger(rand()*1000)}),
+      memberCount: toInteger(rand()*1000),
+      category: CASE WHEN rand() < 0.5 THEN 'Hobby' ELSE 'Professional' END,
+      isPublic: rand() < 0.7
+  })",
+  {batchSize:1000, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,15000) AS id RETURN id",
+  "CREATE (:PAGE {
+      name: 'Page ' + id,
+      category: CASE WHEN rand() < 0.5 THEN 'Entertainment' ELSE 'News' END,
+      likes: toInteger(rand()*10000),
+      description: 'Page description ' + id,
+      createdAt: datetime() - duration({days: toInteger(rand()*365)})
+  })",
+  {batchSize:1000, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,200) AS id RETURN id",
+  "CREATE (:INTEREST {
+      name: 'Interest ' + id,
+      popularity: toInteger(rand()*10000),
+      createdAt: datetime() - duration({days: toInteger(rand()*1000)})
+  })",
+  {batchSize:100, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,5000) AS id RETURN id",
+  "CREATE (:LOCATION {
+      city: 'City ' + toString(toInteger(rand()*100)),
+      country: CASE WHEN rand() < 0.7 THEN 'Sweden' ELSE 'Norway' END,
+      population: toInteger(rand()*1000000),
+      area: round(rand()*500,2)
+  })",
+  {batchSize:500, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON) RETURN p",
+  "WITH p, 1 + toInteger(rand()*1) AS numFriends
+   FOREACH(i IN range(1, numFriends) |
+     // Pick a random PERSON (excluding p) with a low probability.
+     WITH p
+     MATCH (friend:PERSON) WHERE friend <> p AND rand() < 0.005
+     CREATE (p)-[:FRIENDS_WITH { friends_since: datetime() - duration({days: toInteger(rand()*2000)}) }]->(friend)
+   )",
+  {batchSize:1000, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (org:ORGANIZATION) WHERE rand() < 0.0005 RETURN p, org",
+  "CREATE (p)-[:WORKS_FOR { since: datetime() - duration({years: toInteger(rand()*10)}) }]->(org)",
+  {batchSize:500, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (e:EVENT) WHERE rand() < 0.001 RETURN p, e",
+  "CREATE (p)-[:ATTENDS]->(e)",
+  {batchSize:1000, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (g:GROUP) WHERE rand() < 0.001 RETURN p, g",
+  "CREATE (p)-[:MEMBER_OF]->(g)",
+  {batchSize:1000, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (pg:PAGE) WHERE rand() < 0.001 RETURN p, pg",
+  "CREATE (p)-[:LIKES]->(pg)",
+  {batchSize:1000, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (i:INTEREST) WHERE rand() < 0.001 RETURN p, i",
+  "CREATE (p)-[:INTERESTED_IN]->(i)",
+  {batchSize:1000, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "MATCH (n) WHERE n:PERSON OR n:ORGANIZATION OR n:EVENT OR n:GROUP OR n:PAGE RETURN n",
+  "WITH n, apoc.coll.randomItem( (MATCH (l:LOCATION) RETURN collect(l)) ) AS loc
+   CREATE (n)-[:LOCATED_IN]->(loc)",
+  {batchSize:500, parallel:true}
+);
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON) RETURN p",
+  "SET p.friendsCount = size((p)-[:FRIENDS_WITH]->())",
+  {batchSize:1000, parallel:true}
+);
+
+// 1. Create PERSON nodes with varying property sets (some missing optional properties)
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,50000) AS id RETURN id",
+  "
+  // Every node gets basic properties
+  WITH id, {
+    firstName: 'First' + id,
+    lastName: 'Last' + id,
+    email: 'user' + id + '@example.com',
+    createdAt: datetime(),
+    age: toInteger(rand()*80 + 18)
+  } AS baseProps
+  // Randomly add extra properties
+  WITH id, baseProps,
+    CASE WHEN rand() < 0.5 THEN {bio: 'Bio for user ' + id, hobby: 'Hobby ' + toString(toInteger(rand()*50))} ELSE {} END AS extraProps1,
+    CASE WHEN rand() < 0.3 THEN {status: 'active'} ELSE {status: 'inactive'} END AS extraProps2,
+    CASE WHEN rand() < 0.2 THEN {reputation: toInteger(rand()*1000), premiumUser: true} ELSE {reputation: toInteger(rand()*1000)} END AS extraProps3
+  WITH apoc.map.mergeList([baseProps, extraProps1, extraProps2, extraProps3]) AS props
+  CALL apoc.create.node(['PERSON'], props) YIELD node
+  RETURN count(node) AS createdPersons
+  ", {batchSize:1000, parallel:true});
+
+// 2. Create additional PERSON nodes with multiple labels (e.g., PERSON + STUDENT)
+CALL apoc.periodic.iterate(
+  "UNWIND range(50001,75000) AS id RETURN id",
+  "
+  WITH id, {
+    firstName: 'Student' + id,
+    lastName: 'Learner' + id,
+    email: 'student' + id + '@edu.com',
+    createdAt: datetime(),
+    age: toInteger(rand()*25 + 18),
+    major: CASE WHEN rand() < 0.5 THEN 'Computer Science' ELSE 'History' END,
+    enrollmentYear: 2010 + toInteger(rand()*12)
+  } AS props
+  CALL apoc.create.node(['PERSON','STUDENT'], props) YIELD node
+  RETURN count(node) AS createdStudentPersons
+  ", {batchSize:1000, parallel:true});
+
+// 3. Create additional PERSON nodes with multiple labels (e.g., PERSON + TEACHER)
+CALL apoc.periodic.iterate(
+  "UNWIND range(75001,90000) AS id RETURN id",
+  "
+  WITH id, {
+    firstName: 'Teacher' + id,
+    lastName: 'Educator' + id,
+    email: 'teacher' + id + '@edu.com',
+    createdAt: datetime(),
+    age: toInteger(rand()*30 + 30),
+    subject: CASE WHEN rand() < 0.5 THEN 'Math' ELSE 'Literature' END,
+    experience: toInteger(rand()*20 + 5)
+  } AS props
+  CALL apoc.create.node(['PERSON','TEACHER'], props) YIELD node
+  RETURN count(node) AS createdTeacherPersons
+  ", {batchSize:1000, parallel:true});
+
+// 4. Create ORGANIZATION nodes with varied property sets
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,10000) AS id RETURN id",
+  "
+  WITH id,
+    { name: 'Org' + id, industry: CASE WHEN rand()<0.5 THEN 'Tech' ELSE 'Finance' END, founded: date() - duration({years: toInteger(rand()*50)}), employees: toInteger(rand()*1000) } AS baseOrg,
+    CASE WHEN rand() < 0.5 THEN { ceo: 'CEO ' + id, revenue: round(rand()*1000000,2) } ELSE { ceo: 'Unknown' } END AS extraOrg
+  WITH apoc.map.mergeList([baseOrg, extraOrg]) AS orgProps
+  CALL apoc.create.node(['ORGANIZATION'], orgProps) YIELD node
+  RETURN count(node) AS createdOrganizations
+  ", {batchSize:500, parallel:true});
+
+// 5. Create EVENT nodes with extra optional properties
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,15000) AS id RETURN id",
+  "
+  WITH id,
+    { title: 'Event ' + id, date: datetime() + duration({days: toInteger(rand()*365)}), location: 'Venue ' + toString(toInteger(rand()*500)) } AS baseEvent,
+    CASE WHEN rand() < 0.4 THEN { description: 'Event details for event ' + id } ELSE {} END AS extraEvent1,
+    CASE WHEN rand() < 0.3 THEN { category: 'Music' } ELSE { category: 'Conference' } END AS extraEvent2
+  WITH apoc.map.mergeList([baseEvent, extraEvent1, extraEvent2]) AS eventProps
+  CALL apoc.create.node(['EVENT'], eventProps) YIELD node
+  RETURN count(node) AS createdEvents
+  ", {batchSize:500, parallel:true});
+
+// 6. Create GROUP nodes with varied labels and properties
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,8000) AS id RETURN id",
+  "
+  WITH id,
+    { name: 'Group ' + id, createdAt: datetime() - duration({days: toInteger(rand()*1000)}) } AS baseGroup,
+    CASE WHEN rand() < 0.5 THEN { memberCount: toInteger(rand()*500) } ELSE { memberCount: toInteger(rand()*1000) } END AS extraGroup
+  WITH apoc.map.mergeList([baseGroup, extraGroup]) AS groupProps
+  // Randomly assign an extra label "VIP_GROUP" to some groups
+  CALL apoc.create.node( CASE WHEN rand() < 0.1 THEN ['GROUP','VIP_GROUP'] ELSE ['GROUP'] END, groupProps) YIELD node
+  RETURN count(node) AS createdGroups
+  ", {batchSize:500, parallel:true});
+
+// 7. Create PAGE nodes with a mix of properties
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,5000) AS id RETURN id",
+  "
+  WITH id,
+    { name: 'Page ' + id, createdAt: datetime() - duration({days: toInteger(rand()*365)}), likes: toInteger(rand()*10000) } AS basePage,
+    CASE WHEN rand() < 0.6 THEN { category: 'Entertainment' } ELSE { category: 'News' } END AS extraPage
+  WITH apoc.map.mergeList([basePage, extraPage]) AS pageProps
+  CALL apoc.create.node(['PAGE'], pageProps) YIELD node
+  RETURN count(node) AS createdPages
+  ", {batchSize:500, parallel:true});
+
+// 8. Create INTEREST nodes with varied properties
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,300) AS id RETURN id",
+  "
+  WITH id,
+    { name: 'Interest ' + id, popularity: toInteger(rand()*10000) } AS baseInterest,
+    CASE WHEN rand() < 0.5 THEN { topic: 'Art' } ELSE { topic: 'Science' } END AS extraInterest
+  WITH apoc.map.mergeList([baseInterest, extraInterest]) AS interestProps
+  CALL apoc.create.node(['INTEREST'], interestProps) YIELD node
+  RETURN count(node) AS createdInterests
+  ", {batchSize:100, parallel:true});
+
+// 9. Create LOCATION nodes with varied geographic properties
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,2000) AS id RETURN id",
+  "
+  WITH id,
+    { city: 'City ' + toString(toInteger(rand()*200)), country: CASE WHEN rand()<0.7 THEN 'Sweden' ELSE 'Norway' END } AS baseLocation,
+    CASE WHEN rand() < 0.5 THEN { population: toInteger(rand()*1000000) } ELSE { population: toInteger(rand()*500000) } END AS extraLocation,
+    CASE WHEN rand() < 0.3 THEN { area: round(rand()*500,2) } ELSE {} END AS extraLocation2
+  WITH apoc.map.mergeList([baseLocation, extraLocation, extraLocation2]) AS locProps
+  CALL apoc.create.node(['LOCATION'], locProps) YIELD node
+  RETURN count(node) AS createdLocations
+  ", {batchSize:200, parallel:true});
+
+// 10. Create MESSAGE nodes (representing interactions) with varied content
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,10000) AS id RETURN id",
+  "
+  WITH id,
+    { content: 'Message content ' + id, sentAt: datetime() - duration({minutes: toInteger(rand()*10000)}) } AS msgProps,
+    CASE WHEN rand() < 0.3 THEN { read: true } ELSE { read: false } END AS extraMsg
+  WITH apoc.map.mergeList([msgProps, extraMsg]) AS messageProps
+  CALL apoc.create.node(['MESSAGE'], messageProps) YIELD node
+  RETURN count(node) AS createdMessages
+  ", {batchSize:500, parallel:true});
+
+// 11. Create sparse FRIENDS_WITH relationships between PERSON nodes with varying properties
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON) RETURN p",
+  "
+  WITH p, 1 + toInteger(rand()*1) AS numFriends
+  FOREACH(i IN range(1, numFriends) |
+    // Pick a random friend with a low chance, ensure p <> friend
+    WITH p
+    MATCH (friend:PERSON) WHERE friend <> p AND rand() < 0.002
+    CREATE (p)-[:FRIENDS_WITH { friends_since: datetime() - duration({days: toInteger(rand()*2000)}), closeness: toInteger(rand()*100) }]->(friend)
+  )
+  ", {batchSize:1000, parallel:true});
+
+// 12. Create sparse WORKS_FOR relationships (mixing different relationship properties)
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (org:ORGANIZATION) WHERE rand() < 0.0008 RETURN p, org",
+  "CREATE (p)-[:WORKS_FOR { since: datetime() - duration({years: toInteger(rand()*20)}), position: CASE WHEN rand()<0.5 THEN 'Employee' ELSE 'Manager' END }]->(org)",
+  {batchSize:500, parallel:true});
+
+// 13. Create sparse ATTENDS relationships from PERSON to EVENT with additional data
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (e:EVENT) WHERE rand() < 0.001 RETURN p, e",
+  "CREATE (p)-[:ATTENDS { ticketPrice: round(rand()*150,2), registrationDate: datetime() - duration({days: toInteger(rand()*30)}) }]->(e)",
+  {batchSize:500, parallel:true});
+
+// 14. Create sparse MEMBER_OF relationships from PERSON to GROUP with role data
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (g:GROUP) WHERE rand() < 0.001 RETURN p, g",
+  "CREATE (p)-[:MEMBER_OF { role: CASE WHEN rand() < 0.5 THEN 'member' ELSE 'admin' END, joinedAt: datetime() - duration({days: toInteger(rand()*1000)}) }]->(g)",
+  {batchSize:500, parallel:true});
+
+// 15. Create sparse LIKES relationships from PERSON to PAGE with a rating
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (pg:PAGE) WHERE rand() < 0.001 RETURN p, pg",
+  "CREATE (p)-[:LIKES { likedAt: datetime() - duration({days: toInteger(rand()*365)}), rating: toInteger(rand()*5)+1 }]->(pg)",
+  {batchSize:500, parallel:true});
+
+// 16. Create sparse INTERESTED_IN relationships from PERSON to INTEREST
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (i:INTEREST) WHERE rand() < 0.001 RETURN p, i",
+  "CREATE (p)-[:INTERESTED_IN { intensity: toInteger(rand()*10)+1 }]->(i)",
+  {batchSize:500, parallel:true});
+
+// 17. Create LOCATED_IN relationships linking various nodes (PERSON, ORGANIZATION, EVENT, GROUP, PAGE) to LOCATION nodes
+CALL apoc.periodic.iterate(
+  "MATCH (n) WHERE n:PERSON OR n:ORGANIZATION OR n:EVENT OR n:GROUP OR n:PAGE RETURN n",
+  "WITH n, apoc.coll.randomItem( (MATCH (l:LOCATION) RETURN collect(l)) ) AS loc
+   CREATE (n)-[:LOCATED_IN]->(loc)",
+  {batchSize:500, parallel:true});
+
+// 18. Create MESSAGE relationships between PERSON nodes (simulate direct messages)
+CALL apoc.periodic.iterate(
+  "MATCH (p1:PERSON), (p2:PERSON) WHERE p1 <> p2 AND rand() < 0.001 RETURN p1, p2",
+  "CREATE (p1)-[:MESSAGED { sentAt: datetime() - duration({minutes: toInteger(rand()*10000)}), messageType: CASE WHEN rand() < 0.5 THEN 'text' ELSE 'image' END }]->(p2)",
+  {batchSize:500, parallel:true});
+
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON) RETURN p",
+  "SET p.friendsCount = size((p)-[:FRIENDS_WITH]->())",
+  {batchSize:1000, parallel:true}
+);
+
+// 19. Create PERSON nodes with an alternative set of properties and random missing values
+CALL apoc.periodic.iterate(
+  "UNWIND range(90001,100000) AS id RETURN id",
+  "
+  WITH id,
+    { firstName: 'AltFirst' + id, lastName: 'AltLast' + id, email: 'altuser' + id + '@example.com', createdAt: datetime(), age: toInteger(rand()*60 + 20) } AS base,
+    CASE WHEN rand() < 0.5 THEN { bio: 'Alternative bio ' + id } ELSE {} END AS opt1,
+    CASE WHEN rand() < 0.4 THEN { interests: 'Interest' + toString(toInteger(rand()*100)) } ELSE {} END AS opt2,
+    CASE WHEN rand() < 0.3 THEN { mood: CASE WHEN rand() < 0.5 THEN 'happy' ELSE 'pensive' END } ELSE {} END AS opt3
+  WITH apoc.map.mergeList([base, opt1, opt2, opt3]) AS props
+  CALL apoc.create.node(['PERSON'], props) YIELD node
+  RETURN count(node) AS createdAltPersons
+  ", {batchSize:1000, parallel:true});
+
+// 20. Create PERSON nodes with mixed labels (PERSON + INFLUENCER) and extra social metrics
+CALL apoc.periodic.iterate(
+  "UNWIND range(100001,110000) AS id RETURN id",
+  "
+  WITH id,
+    { firstName: 'Influencer' + id, lastName: 'Star' + id, email: 'star' + id + '@social.com', createdAt: datetime(), age: toInteger(rand()*40+20),
+      followers: toInteger(rand()*100000), postsCount: toInteger(rand()*5000) } AS props
+  CALL apoc.create.node(['PERSON','INFLUENCER'], props) YIELD node
+  RETURN count(node) AS createdInfluencers
+  ", {batchSize:1000, parallel:true});
+
+// 21. Create STATUS nodes (e.g., posts or updates) with varied content and optional media
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,20000) AS id RETURN id",
+  "
+  WITH id,
+    { content: 'Status update ' + id, postedAt: datetime() - duration({minutes: toInteger(rand()*10000)}), likes: toInteger(rand()*5000) } AS baseStatus,
+    CASE WHEN rand() < 0.5 THEN { mediaUrl: 'http://example.com/media/' + id + '.jpg' } ELSE {} END AS mediaProps,
+    CASE WHEN rand() < 0.3 THEN { mood: CASE WHEN rand() < 0.5 THEN 'excited' ELSE 'bored' END } ELSE {} END AS moodProps
+  WITH apoc.map.mergeList([baseStatus, mediaProps, moodProps]) AS statusProps
+  CALL apoc.create.node(['STATUS'], statusProps) YIELD node
+  RETURN count(node) AS createdStatusNodes
+  ", {batchSize:500, parallel:true});
+
+// 22. Create COMMENT nodes (for statuses or posts) with varied text and sentiment
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,15000) AS id RETURN id",
+  "
+  WITH id,
+    { text: 'Comment text ' + id, commentedAt: datetime() - duration({minutes: toInteger(rand()*5000)}), sentiment: toInteger(rand()*3)-1 } AS commentProps,
+    CASE WHEN rand() < 0.4 THEN { flagged: true } ELSE { flagged: false } END AS flagProps
+  WITH apoc.map.mergeList([commentProps, flagProps]) AS props
+  CALL apoc.create.node(['COMMENT'], props) YIELD node
+  RETURN count(node) AS createdComments
+  ", {batchSize:500, parallel:true});
+
+// 23. Create REACTION nodes (like, love, haha, etc.) with type and timestamp
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,10000) AS id RETURN id",
+  "
+  WITH id,
+    { type: CASE 
+              WHEN rand() < 0.25 THEN 'LIKE'
+              WHEN rand() < 0.5 THEN 'LOVE'
+              WHEN rand() < 0.75 THEN 'WOW'
+              ELSE 'SAD' END,
+      reactedAt: datetime() - duration({seconds: toInteger(rand()*10000)}) } AS reactionProps
+  CALL apoc.create.node(['REACTION'], reactionProps) YIELD node
+  RETURN count(node) AS createdReactions
+  ", {batchSize:500, parallel:true});
+
+// 24. Create TAG nodes for categorizing content with a wide variety of tags
+CALL apoc.periodic.iterate(
+  "UNWIND range(1,500) AS id RETURN id",
+  "
+  WITH id,
+    { tag: 'Tag' + id, relevance: round(rand()*10,2) } AS tagProps,
+    CASE WHEN rand() < 0.5 THEN { category: 'general' } ELSE { category: 'niche' } END AS extraTag
+  WITH apoc.map.mergeList([tagProps, extraTag]) AS props
+  CALL apoc.create.node(['TAG'], props) YIELD node
+  RETURN count(node) AS createdTags
+  ", {batchSize:100, parallel:true});
+
+// 25. Create CHECKED_IN relationships: PERSON -> LOCATION, with optional device info
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (l:LOCATION) WHERE rand() < 0.0008 RETURN p, l",
+  "CREATE (p)-[:CHECKED_IN { checkedAt: datetime() - duration({minutes: toInteger(rand()*10000)}), device: CASE WHEN rand() < 0.5 THEN 'mobile' ELSE 'desktop' END }]->(l)",
+  {batchSize:500, parallel:true});
+
+// 26. Create TAGGED relationships: STATUS -> TAG, many statuses can be tagged with multiple tags
+CALL apoc.periodic.iterate(
+  "MATCH (s:STATUS), (t:TAG) WHERE rand() < 0.02 RETURN s, t",
+  "CREATE (s)-[:TAGGED { taggedAt: datetime() - duration({days: toInteger(rand()*30)}) }]->(t)",
+  {batchSize:500, parallel:true});
+
+// 27. Create COMMENT_ON relationships: COMMENT -> STATUS
+CALL apoc.periodic.iterate(
+  "MATCH (c:COMMENT), (s:STATUS) WHERE rand() < 0.01 RETURN c, s",
+  "CREATE (c)-[:COMMENT_ON { commentedAt: c.commentedAt }]->(s)",
+  {batchSize:500, parallel:true});
+
+// 28. Create REACTED_TO relationships: REACTION -> STATUS (simulate user reactions)
+CALL apoc.periodic.iterate(
+  "MATCH (r:REACTION), (s:STATUS) WHERE rand() < 0.01 RETURN r, s",
+  "CREATE (r)-[:REACTED_TO { reactedAt: r.reactedAt }]->(s)",
+  {batchSize:500, parallel:true});
+
+// 29. Create MENTIONS relationships: STATUS -> PERSON (simulate mentions in a post)
+CALL apoc.periodic.iterate(
+  "MATCH (s:STATUS), (p:PERSON) WHERE rand() < 0.005 RETURN s, p",
+  "CREATE (s)-[:MENTIONS { mentionedAt: s.postedAt + duration({minutes: toInteger(rand()*60)}) }]->(p)",
+  {batchSize:500, parallel:true});
+
+// 30. Create SHARES relationships: PERSON -> STATUS (simulate sharing of posts)
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON), (s:STATUS) WHERE rand() < 0.005 RETURN p, s",
+  "CREATE (p)-[:SHARES { sharedAt: datetime() - duration({minutes: toInteger(rand()*10000)}) }]->(s)",
+  {batchSize:500, parallel:true});
+
+// 31. Create REPLIES relationships: COMMENT -> COMMENT (simulate threaded comments)
+CALL apoc.periodic.iterate(
+  "MATCH (c1:COMMENT), (c2:COMMENT) WHERE c1 <> c2 AND rand() < 0.001 RETURN c1, c2",
+  "CREATE (c1)-[:REPLIES { repliedAt: c1.commentedAt + duration({minutes: toInteger(rand()*30)}) }]->(c2)",
+  {batchSize:500, parallel:true});
+
+// 32. Create FOLLOW relationships for influencers: INFLUENCER -> PERSON (simulate following behavior)
+CALL apoc.periodic.iterate(
+  "MATCH (inf:PERSON:INFLUENCER), (p:PERSON) WHERE inf <> p AND rand() < 0.005 RETURN inf, p",
+  "CREATE (p)-[:FOLLOWS { followedAt: datetime() - duration({days: toInteger(rand()*365)}) }]->(inf)",
+  {batchSize:500, parallel:true});
+
+// 33. Update friend counts for all PERSON nodes (including alternative ones)
+CALL apoc.periodic.iterate(
+  "MATCH (p:PERSON) RETURN p",
+  "SET p.friendsCount = size((p)-[:FRIENDS_WITH]->())",
+  {batchSize:1000, parallel:true});
+
+// 34. Update share counts on STATUS nodes
+CALL apoc.periodic.iterate(
+  "MATCH (s:STATUS) RETURN s",
+  "SET s.shareCount = size((:PERSON)-[:SHARES]->(s))",
+  {batchSize:500, parallel:true});
